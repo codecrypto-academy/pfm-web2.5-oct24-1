@@ -1,11 +1,11 @@
 import express, { Request, Response, Router } from 'express'
-import { listNetworks, networkDetails } from './functions/networkFunctions'
+import { networkDetails } from './functions/networkFunctions'
 
 
 const router: Router = express.Router()
 
 // Network endpoints
-router.get('/networks', (req:Request, res:Response) => { listNetworks(req,res) })
+// TODO router.get('/networks', (req:Request, res:Response) => { listNetworks(req,res) })
 router.get('/network/:id', (req:Request, res:Response) => { networkDetails(req,res) })
 //TODO router.post('/network', (req:Request, res:Response) => { createNetwork(req,res) })
 //TODO router.delete('/network/:id', (req:Request, res:Response) => { deleteNetwork(req,res) })
