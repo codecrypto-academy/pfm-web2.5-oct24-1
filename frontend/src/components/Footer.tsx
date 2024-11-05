@@ -36,7 +36,7 @@ export const Footer: React.FC = () => {
   ];
 
   return (
-    <footer className="d-flex justify-content-between bg-dark text-white p-4 position-fixed bottom-0 w-100">
+    <footer className="d-flex justify-content-between text-white p-4 position-relative bottom-0 w-100">
       {footerSections.map((section, index) => (
         <div
           key={index}
@@ -44,9 +44,9 @@ export const Footer: React.FC = () => {
             index === 0 ? 'ms-3' : index === footerSections.length - 1 ? 'me-3 text-end' : 'text-center'
           }`}
         >
-          <h5 className="mb-2">{section.title}</h5>
+          <p className="mb-2 text-secondary">{section.title}</p>
           {section.links.map((link, linkIndex) => (
-            <a key={linkIndex} href={link.url} className="text-white text-decoration-none mb-1">
+            <a key={linkIndex} href={link.url} className="text-secondary text-decoration-none mb-1">
               {link.text}
             </a>
           ))}
