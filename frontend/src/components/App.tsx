@@ -1,11 +1,16 @@
 import React from 'react';
+import { Outlet } from "react-router-dom";
 import {Header} from './Header';
 import {Footer} from './Footer';
+import { Sidebar } from './Sidebar';
+
 
 export const App: React.FC = () => {
-    return (<div> 
+    return (<div  className="app-container"> 
             <Header></Header>
-            <p> Text to body</p>
+            <Sidebar></Sidebar>
+            <div className="main-content"><Outlet></Outlet>
+            </div>
             <Footer></Footer>
         </div>
    
