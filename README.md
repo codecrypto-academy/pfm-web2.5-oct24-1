@@ -1,6 +1,6 @@
 # Final Project Module Web 2.5
 
-Welcome to the Final Project Module  for Web2.5. This repository contains all necessary instructions to set up and launch the project, as well as additional resources to help you understand the theoretical foundations.
+Welcome to the Final Project Module  for Web2.5. This repository contains all necessary instructions to set up and launch the project, as well as additional resources to help you understand the theoretical foundations
 
 ## Table of Contents
 1. [Project Overview](#project-overview)
