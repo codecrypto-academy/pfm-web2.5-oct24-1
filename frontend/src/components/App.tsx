@@ -8,11 +8,13 @@ import { Sidebar } from './Sidebar';
 export const App: React.FC = () => {
     return (<div  className="app-container"> 
             <Header></Header>
-            <Sidebar></Sidebar>
-            <div className="main-content">
-                <Outlet></Outlet>
-            </div>
-            <Footer></Footer>
+            <div className='content-layout'>
+                <Sidebar></Sidebar>
+                <div className="main-content">
+                    <Outlet></Outlet>
+                    <Footer></Footer>
+                </div>
+            </div>   
         </div>
    
     )
