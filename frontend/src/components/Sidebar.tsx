@@ -7,8 +7,8 @@ export const Sidebar: React.FC = () =>{
             <h5 className='text-center'>Menu</h5>
             <nav>
                 <ul>
-                    <li><Link to="/">New network</Link></li>
                     <li><Link to="/networklist">Network list</Link></li>
+                    <li><Link to="/">New network</Link></li>
                 </ul>
             </nav>
         </aside>
