@@ -12,7 +12,7 @@ const execAsync = promisify(exec)
 // Definir rutas base
 const BASE_DIR = path.join(process.cwd()) // Directorio raíz del proyecto
 const NETWORKS_DIR = path.join(BASE_DIR, 'networks')
-const NETWORKS_FILE = path.join(BASE_DIR, 'src', 'data', 'networks.json')
+const NETWORKS_FILE = path.join(BASE_DIR , 'data', 'networks.json')
 
 // El directorio networks existe
 if (!fs.existsSync(NETWORKS_DIR)) {
