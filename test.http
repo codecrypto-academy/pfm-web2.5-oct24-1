@@ -1,0 +1,72 @@
+###List networks
+GET http://localhost:3000/networks HTTP/1.1
+
+### Add Network
+POST http://localhost:3000/network HTTP/1.1
+content-type: application/json
+
+{
+        "id": "testnet1",
+        "chainId": 123456,
+        "subnet": "172.16.230.0/24",
+        "ipBootNode": "172.16.230.10",
+        "alloc": [
+            {
+                "address": "C077193960479a5e769f27B1ce41469C89Bec299",
+                "value": 100000000
+            },
+            {
+                "address": "0x17752fF2C194085ffbaA59EA128Fd4bdacd91193",
+                "value": 100000000
+            }            
+        ],
+        "nodes": [
+            {
+                "type": "miner",
+                "name": "minero1",
+                "ip": "172.16.230.20",
+                "port": null
+            },
+            {
+                "type": "rpc",
+                "name": "rcp1",
+                "ip": "172.16.230.30",
+                "port": 9988
+            }
+        ]
+}
+
+### Start Network
+POST http://localhost:3000/network/testnet1/start HTTP/1.1
+content-type: application/json
+
+{
+        "id": "testnet2",
+        "chainId": 123456,
+        "subnet": "172.16.230.0/24",
+        "ipBootNode": "172.16.230.10",
+        "alloc": [
+            {
+                "address": "C077193960479a5e769f27B1ce41469C89Bec299",
+                "value": 100000000
+            },
+            {
+                "address": "0x17752fF2C194085ffbaA59EA128Fd4bdacd91193",
+                "value": 100000000
+            }            
+        ],
+        "nodes": [
+            {
+                "type": "miner",
+                "name": "minero1",
+                "ip": "172.16.230.20",
+                "port": null
+            },
+            {
+                "type": "rpc",
+                "name": "rcp1",
+                "ip": "172.16.230.30",
+                "port": 9988
+            }
+        ]
+    }
