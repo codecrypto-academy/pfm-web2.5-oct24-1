@@ -84,6 +84,7 @@ export const NetworkList: React.FC = () => {
             <th scope="col">Status</th>
             <th scope="col">Start</th>
             <th scope="col">Stop</th>
+            <th scope="col">Restart</th>
             <th scope="col">Operations</th>
             </tr>
         </thead>
@@ -95,6 +96,7 @@ export const NetworkList: React.FC = () => {
                             <td> Up/Down</td>
                             <td><button>Start</button></td>
                             <td><button>Stop</button></td>
+                            <td><button>Restart</button></td>
                             <td><button>Operations</button></td>
                         </tr>     
             ))}
