@@ -1,63 +1,69 @@
 header {
-    grid-column: 1 / -1; /* Header ocupa toda la fila superior */
+    flex-shrink: 0;
 }
 
 
 footer{
-    background-color: #9c9ea06d;
-    grid-column: 1 / -1;
+    margin-top: auto; /* Coloca el footer al final del contenido de main-content */
+    background-color: #f1f1f1;
+    padding: 10px;
+    text-align: center;
 }
 
 .app-container {
-    display: grid;
-    grid-template-rows: auto 1fr auto; /* Header, contenido, y Footer */
-    grid-template-columns: 220px 1fr; /* Sidebar y contenido principal */
+    display: flex;
+    flex-direction: column;
     height: 100vh;
 }
 
+.content-layout {
+    display: flex;
+    flex: 1; /* Ocupa el espacio restante después del header */
+}
+
 .main-content {
-    grid-row: 2; /* Contenido central entre Header y Footer */
-    grid-column: 2;
+    display: flex;
+    flex-direction: column;
+    flex: 1; /* Ocupar el espacio restante de la ventana */
     padding: 20px;
     overflow-y: auto;
-    background-color: #ffffff; /* Fondo blanco para el contenido */
+    background-color: #ffffff;
 }
 
 
 .sidebar {
-    position: relative; /* Cambiado de fixed a relative */
-    width: 200px;
-    padding-top: 20px;
-    height: calc(100vh - 160px); /* Ajuste para que no cubra el footer (56px puede ser el tamaño del footer) */
-    float: left; /* Alineamos el sidebar a la izquierda */
-    background-color: #495057; /* Color de fondo más claro que el header y footer */
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1); /* Sombra */
-    grid-row: 2; 
-    grid-column: 1;
+    width: 220px;
+    height: 100vh; /* Ocupar todo el alto de la ventana */
+    background-color: #3c4043; /* Color ligeramente más claro para diferenciar del header */
+    color: #fff;
+    padding-top: 20px; /* Espacio en la parte superior */
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1); /* Sombra para dar separación del contenido */
 }
 
-.sidebar ul{
+.sidebar ul {
     list-style-type: none;
-    padding:0
+    padding: 0;
+    margin: 0;
 }
 
-.sidebar li{
-    margin: 15px 0;
+.sidebar li {
+    margin: 10px 0;
     text-align: center;
-    border-bottom: 1px solid #adb5bd; /* Línea de separación */
+    border-bottom: 2px solid #495057; /* Línea de separación más oscura */
+    padding: 5px 0; /* Espacio adicional en cada elemento */
 }
 
-.sidebar a{
-    color: #f8f9fa; /* Color de texto claro */
-    text-decoration:none;
-    font-weight:500;
-    display: block; /* Hace que el área clicable sea más grande */
-    padding: 10px; /* Espaciado interno para el enlace */
-    border-radius: 5px; /* Bordes redondeados en los enlaces */
+.sidebar a {
+    color: #e9ecef; /* Color de texto claro */
+    text-decoration: none;
+    font-weight: 500;
+    display: block;
+    padding: 10px 15px; /* Espaciado adicional para mejor interacción */
+    border-radius: 8px; /* Bordes más redondeados en los enlaces */
+    transition: background-color 0.2s ease; /* Animación suave en el hover */
 }
 
-.sidebar a:hover{
-    background-color: #343a40; /* Color de fondo en hover */
-    border-radius: 5px; /* Bordes redondeados */
+.sidebar a:hover {
+    background-color: #4b5259; /* Fondo en hover que combina con el color del sidebar */
+    color: #ffffff; /* Texto blanco para mayor contraste en hover */
 }
-
