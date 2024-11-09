@@ -1,0 +1,9 @@
+{
+    "ext":"ts",
+    "watch":["src"],
+    "ignore": [
+        "src/data/*",
+        "networks/*",
+        "node_modules/*"
+    ]
+}

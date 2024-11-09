@@ -65,7 +65,7 @@ export function listNetworks(req: Request, res: Response) {
     }
 }
 
-export async function createNetwork(req: Request, res: Response) {
+export async function addNetwork(req: Request, res: Response) {
     try {
         // 1. Leer el archivo de redes existente
         const data = fs.readFileSync(NETWORKS_FILE, 'utf8')
@@ -82,39 +82,68 @@ export async function createNetwork(req: Request, res: Response) {
             return res.status(400).send('Network ID already exists')
         }
 
-        // 4. Crear el directorio específico para la red
-        const networkDir = path.join(NETWORKS_DIR, newNetwork.id)
-        fs.mkdirSync(networkDir, { recursive: true })
-
-        // 5. Generar y guardar el archivo genesis
-        const genesis = generateGenesisFile(newNetwork)
-        const genesisPath = path.join(networkDir, 'genesis.json')
-        fs.writeFileSync(genesisPath, JSON.stringify(genesis, null, 2))
-
-        // 6. Inicializar el directorio de datos para el bootnode
-        try {
-            await execAsync(`docker run --rm -v "${networkDir}:/eth" ethereum/client-go:alltools-latest init /eth/genesis.json`)
-        } catch (error) {
-            console.error('Error initializing geth:', error)
-            // Limpiar el directorio creado si hay error
-            fs.rmSync(networkDir, { recursive: true, force: true })
-            throw new Error('Failed to initialize geth directory')
-        }
-
-        // 7. Agregar la nueva red al archivo networks.json
+        // 4. Agregar la nueva red al archivo networks.json
         networks.push(newNetwork)
         fs.writeFileSync(NETWORKS_FILE, JSON.stringify(networks, null, 2))
 
         res.status(201).send({
-            message: 'Network created successfully',
+            message: 'Network added successfully',
             network: newNetwork
         })
 
     } catch (error) {
-        console.error('Error creating network:', error)
-        res.status(500).send(`Error creating network: ${error.message}`)
+        console.error('Error adding network:', error)
+        res.status(500).send(`Error adding network: ${error.message}`)
     }
 }
+
+export async function startNetwork(req: Request, res: Response){
+    // 1. Leer el archivo de redes existente
+    const data = fs.readFileSync(NETWORKS_FILE, 'utf8')
+    const networks: Network[] = JSON.parse(data)
+
+    // 2. verificar que la red exista
+    if(!networks.some(network => network.id === req.params.id)){
+        return res.status(400).send("Network doen't exist")
+    }
+    
+    // 3. Obtener la red
+    const network = networks.find(network => network.id === req.params.id)
+
+    // 4. Crear el directorio específico para la red
+    const networkDir = path.join(NETWORKS_DIR, network.id)
+    fs.mkdirSync(networkDir, { recursive: true })
+
+    // 5. Generar y guardar el archivo genesis
+    const genesis = generateGenesisFile(network)
+    const genesisPath = path.join(networkDir, 'genesis.json')
+    fs.writeFileSync(genesisPath, JSON.stringify(genesis, null, 2))
+
+    // 6. Generar el password y guardar el archivo password
+    const passwordPath = path.join(networkDir, 'password.txt')
+    fs.writeFileSync(passwordPath, "123456",)
+
+    // 6. Inicializar el bootnode
+    try {
+        const bootnodeDir = path.join(NETWORKS_DIR, network.id, "bootnode")
+        fs.mkdirSync(bootnodeDir,{recursive: true})
+        await execAsync(`docker run --rm -v "${networkDir}:/root" ethereum/client-go:alltools-v1.13.15 sh -c "geth account new --password /root/password.txt --datadir /root/bootnode &&  bootnode -genkey /root/bootnode/boot.key -writeaddress > /root/bootnode/public.key"`)
+    } catch (error) {
+        console.error('Error initializing bootnode', error)
+        // Limpiar el directorio creado si hay error
+        fs.rmSync(networkDir, { recursive: true, force: true })
+        res.status(500).send('Failed to initialize bootnode')
+    }
+    // Se crea el bootnode
+    try {
+        await execAsync(`docker run -d --name bootnode -v "${networkDir}:/root" ethereum/client-go:alltools-v1.13.15 bootnode -nodekey /root/bootnode/boot.key`)
+    } catch (error) {
+        console.error('Error running the bootnode', error)
+        fs.rmSync(networkDir, { recursive: true, force: true })
+        res.status(500).send('Failed to run the bootnode')
+    }
+    return res.send({message: "Network started successfully"})
+} 
 
 // Mantener las funciones existentes
 export function networkDetails(req: Request, res: Response) {
