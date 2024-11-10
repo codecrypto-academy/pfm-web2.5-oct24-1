@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Link } from 'react-router-dom';
+import { Network } from '../../../backend/src/types/network';
 
 export const NetworkList: React.FC = () => {
-    const [networks, setNetworks] = useState([]);
+    const [networks, setNetworks] = useState<Network[] | null>([]);
     useEffect(() => {
       fetch("http://localhost:3000/networks").then((response) => {
         response.json().then((data) => {
@@ -39,7 +40,7 @@ export const NetworkList: React.FC = () => {
             <td>{network.chainId}</td>
             <td><Link to={`/networkdetails/${network.id}`}>{network.id}</Link></td>
             <td>Up/Down</td>
-            <td><button onClick={async () => startNetwork()} >Start</button></td>
+            <td><button>Start</button></td>
             <td><button>Stop</button></td>
             <td><button>Restart</button></td>
             <td><button>Operations</button></td>
