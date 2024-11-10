@@ -280,3 +280,34 @@ export async function startNetwork(req: Request, res: Response) {
         res.status(500).send(`Error starting network: ${error.message}`)
     }
 }
+
+export function deleteNetwork(req: Request, res: Response) {
+    const networkId = req.params.id;
+    try {
+        const data = fs.readFileSync(NETWORKS_FILE, 'utf8');
+        let networks: Network[] = JSON.parse(data);
+
+        // Encontrar la red por su ID
+        const networkIndex = networks.findIndex(net => net.id === networkId);
+        if (networkIndex === -1) {
+            return res.status(404).json({ message: 'Red no encontrada' });
+        }
+
+        // Eliminar la red del array
+        const [deletedNetwork] = networks.splice(networkIndex, 1);
+
+        // Actualizar el archivo networks.json
+        fs.writeFileSync(NETWORKS_FILE, JSON.stringify(networks, null, 2));
+
+        // Opcional: Eliminar la carpeta asociada a la red
+        const networkDir = path.join(NETWORKS_DIR, networkId);
+        if (fs.existsSync(networkDir)) {
+            fs.rmSync(networkDir, { recursive: true, force: true });
+        }
+
+        res.status(200).json({ message: 'Red eliminada correctamente', network: deletedNetwork });
+    } catch (error) {
+        console.error('Error al eliminar la red:', error);
+        res.status(500).json({ message: 'Error al eliminar la red', error: error.message });
+    }
+}

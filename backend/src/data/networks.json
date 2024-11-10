@@ -138,41 +138,5 @@
         "port": 8545
       }
     ]
-  },
-  {
-    "id": "testnet40",
-    "chainId": 15690,
-    "subnet": "172.16.250.0/24",
-    "ipBootNode": "172.16.250.10",
-    "alloc": [
-      {
-        "address": "0x123456789abcdef123456789abcdef123456789a",
-        "value": 100000000
-      },
-      {
-        "address": "0x987654321abcdef123456789abcdef123456789b",
-        "value": 50000000
-      }
-    ],
-    "nodes": [
-      {
-        "type": "miner",
-        "name": "miner1",
-        "ip": "172.16.250.20",
-        "port": null
-      },
-      {
-        "type": "rpc",
-        "name": "rpc1",
-        "ip": "172.16.250.30",
-        "port": 8545
-      },
-      {
-        "type": "normal",
-        "name": "normal1",
-        "ip": "172.16.250.40",
-        "port": null
-      }
-    ]
   }
 ]
