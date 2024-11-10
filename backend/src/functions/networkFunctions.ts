@@ -14,7 +14,7 @@ const GETH_VERSION = 'v1.13.15';
 // Definir rutas base
 const BASE_DIR = path.join(process.cwd());
 const NETWORKS_DIR = path.join(BASE_DIR, 'networks');
-const NETWORKS_FILE = path.join(BASE_DIR, 'src', 'data', 'networks.json');
+const NETWORKS_FILE = path.join(BASE_DIR, 'data', 'networks.json');
 
 // El directorio networks existe
 if (!fs.existsSync(NETWORKS_DIR)) {
@@ -254,9 +254,6 @@ export function networkDetails(req: Request, res: Response) {
     }
 }
 
-<<<<<<< HEAD
-
-=======
 export async function startNetwork(req: Request, res: Response) {
     const networkId = req.params.id
     try {
@@ -314,4 +311,3 @@ export function deleteNetwork(req: Request, res: Response) {
         res.status(500).json({ message: 'Error al eliminar la red', error: error.message });
     }
 }
->>>>>>> origin/T010-agregar-nodos
