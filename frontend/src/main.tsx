@@ -4,6 +4,7 @@ import { BrowserRouter, Route, Routes  } from 'react-router-dom'
 import {App} from './components/App'
 import { NetworkList } from './components/NetworkList'
 import './index.css'
+import { NetworkDetails } from './components/NetworkDetails'
 
 
 createRoot(document.getElementById('root')!).render(
@@ -11,7 +12,8 @@ createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
       <Routes>
         <Route path="/" element= {<App></App>}>
-            <Route path="/networklist" element={<NetworkList></NetworkList>}></Route>
+            <Route path="/networklist" element={<NetworkList></NetworkList>}></Route>\
+            <Route path="/networkdetails/:id" element={<NetworkDetails></NetworkDetails>}></Route>
         </Route>
       </Routes>
       </BrowserRouter>
