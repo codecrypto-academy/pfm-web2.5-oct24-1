@@ -24,7 +24,11 @@ export const NetworkDetails: React.FC = () => {
       }
 
       return <div className="container mt-4">
-      <h3>Network Details</h3>
+        <div className="d-flex justify-content-between align-items-center mb-4">   
+            <h3>Network Details</h3>
+            <button className="btn btn-primary"><Link to="#" className="text-decoration-none text-white">Edit</Link></button>
+        </div>
+      
         <section className="border p-3 mb-4 rounded bg-light">
             <h5>General information </h5>
             <ul className="list-unstyled">
