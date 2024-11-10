@@ -1,22 +1,24 @@
-import { Network } from '../types/network'
-import { Request, Response } from 'express'
-import { isNetworkArray } from '../validations/networkValidations'
-import { GenesisFile, GenesisConfig, GenesisAlloc } from '../types/genesis'
-import fs from 'fs'
-import { exec } from 'child_process'
-import { promisify } from 'util'
-import path from 'path'
+import { Network } from '../types/network';
+import { Request, Response } from 'express';
+import { isNetworkArray, validateNetwork, isNetwork } from '../validations/networkValidations';
+import { GenesisFile, GenesisConfig } from '../types/genesis';
+import fs from 'fs';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import path from 'path';
+import { DockerService } from '../services/dockerService';
 
-const execAsync = promisify(exec)
+const execAsync = promisify(exec);
+const GETH_VERSION = 'v1.13.15';
 
 // Definir rutas base
-const BASE_DIR = path.join(process.cwd()) // Directorio raíz del proyecto
-const NETWORKS_DIR = path.join(BASE_DIR, 'networks')
-const NETWORKS_FILE = path.join(BASE_DIR , 'data', 'networks.json')
+const BASE_DIR = path.join(process.cwd());
+const NETWORKS_DIR = path.join(BASE_DIR, 'networks');
+const NETWORKS_FILE = path.join(BASE_DIR, 'src', 'data', 'networks.json');
 
 // El directorio networks existe
 if (!fs.existsSync(NETWORKS_DIR)) {
-    fs.mkdirSync(NETWORKS_DIR, { recursive: true })
+    fs.mkdirSync(NETWORKS_DIR, { recursive: true });
 }
 
 function generateGenesisFile(network: Network): GenesisFile {
@@ -33,14 +35,15 @@ function generateGenesisFile(network: Network): GenesisFile {
         berlinBlock: 0,
         londonBlock: 0,
         ethash: {}
-    }
+    };
 
-    const alloc: GenesisAlloc = {}
+    const alloc: { [key: string]: { balance: string } } = {};
     network.alloc.forEach(allocation => {
+        const balanceInWei = BigInt(allocation.value) * BigInt(10**18);
         alloc[allocation.address] = {
-            balance: allocation.value.toString() + "000000000000000000"
-        }
-    })
+            balance: balanceInWei.toString()
+        };
+    });
 
     return {
         config,
@@ -48,8 +51,9 @@ function generateGenesisFile(network: Network): GenesisFile {
         gasLimit: "8000000",
         extradata: "0x0000000000000000000000000000000000000000000000000000000000000000",
         alloc
-    }
+    };
 }
+
 export function listNetworks(req: Request, res: Response) {
     try {
         const data = fs.readFileSync(NETWORKS_FILE, 'utf8')
@@ -66,57 +70,171 @@ export function listNetworks(req: Request, res: Response) {
 }
 
 export async function createNetwork(req: Request, res: Response) {
+    const backupFile = path.join(process.cwd(), 'src', 'data', 'networks.json.backup');
+    const tempFile = path.join(process.cwd(), 'src', 'data', 'networks.json.temp');
+    let newNetwork: Network | null = null;  // Declarar fuera del try
+
     try {
-        // 1. Leer el archivo de redes existente
-        const data = fs.readFileSync(NETWORKS_FILE, 'utf8')
-        const networks: Network[] = JSON.parse(data)
+        console.log('\n=== STARTING NETWORK CREATION PROCESS ===');
+
+        // 1. Validar formato básico de la nueva red
+        newNetwork = req.body;  // Asignar dentro del try
+        console.log('New network data:', JSON.stringify(newNetwork, null, 2));
+
+        // 2. Asegurarse de que el directorio data existe
+        const dataDir = path.join(process.cwd(), 'src', 'data');
+        if (!fs.existsSync(dataDir)) {
+            fs.mkdirSync(dataDir, { recursive: true });
+        }
+
+        // 3. Leer redes existentes y crear backup
+        let existingNetworks: Network[] = [];
         
-        // 2. Validar la nueva red desde el body
-        const newNetwork: Network = req.body
-        if (!isNetworkArray([newNetwork])) {
-            return res.status(400).send('Invalid network data')
+        if (fs.existsSync(NETWORKS_FILE)) {
+            try {
+                // Crear backup
+                fs.copyFileSync(NETWORKS_FILE, backupFile);
+                console.log('Created backup of networks.json');
+
+                // Leer contenido actual
+                const fileContent = fs.readFileSync(NETWORKS_FILE, 'utf8');
+                existingNetworks = JSON.parse(fileContent);
+                console.log('Current networks:', existingNetworks);
+            } catch (error) {
+                console.error('Error reading networks.json:', error);
+                throw new Error('Failed to read current networks configuration');
+            }
+        } else {
+            // Si no existe, crear archivo con array vacío
+            fs.writeFileSync(NETWORKS_FILE, JSON.stringify([], null, 2));
+            console.log('Created new networks.json file');
         }
 
-        // 3. Verificar que el ID no exista
-        if (networks.some(net => net.id === newNetwork.id)) {
-            return res.status(400).send('Network ID already exists')
+        // 4. Validaciones
+        if (!isNetwork(newNetwork)) {
+            throw new Error('Invalid network format');
         }
 
-        // 4. Crear el directorio específico para la red
-        const networkDir = path.join(NETWORKS_DIR, newNetwork.id)
-        fs.mkdirSync(networkDir, { recursive: true })
+        const validationErrors = validateNetwork(newNetwork, existingNetworks);
+        if (validationErrors.length > 0) {
+            console.log('Validation errors:', validationErrors);
+            return res.status(400).json({
+                error: 'Validation failed',
+                details: validationErrors
+            });
+        }
 
-        // 5. Generar y guardar el archivo genesis
-        const genesis = generateGenesisFile(newNetwork)
-        const genesisPath = path.join(networkDir, 'genesis.json')
-        fs.writeFileSync(genesisPath, JSON.stringify(genesis, null, 2))
+        // 5. Crear estructura de directorios
+        const networkDir = path.join(NETWORKS_DIR, newNetwork.id);
+        console.log(`Creating network directory at: ${networkDir}`);
 
-        // 6. Inicializar el directorio de datos para el bootnode
+        if (fs.existsSync(networkDir)) {
+            fs.rmSync(networkDir, { recursive: true, force: true });
+        }
+        
+        fs.mkdirSync(networkDir, { recursive: true });
+
+        // 6. Crear y guardar genesis
+        const genesis = generateGenesisFile(newNetwork);
+        const genesisPath = path.join(networkDir, 'genesis.json');
+        fs.writeFileSync(genesisPath, JSON.stringify(genesis, null, 2));
+
+        // 7. Inicializar nodos
+        for (const node of newNetwork.nodes) {
+            const nodeDir = path.join(networkDir, node.name);
+            fs.mkdirSync(nodeDir, { recursive: true });
+            
+            const nodeGenesisPath = path.join(nodeDir, 'genesis.json');
+            fs.copyFileSync(genesisPath, nodeGenesisPath);
+
+            try {
+                const initCommand = `docker run --rm -v "${nodeDir}:/eth" ethereum/client-go:${GETH_VERSION} init /eth/genesis.json`;
+                await execAsync(initCommand);
+            } catch (error) {
+                throw new Error(`Failed to initialize node ${node.name}: ${error.message}`);
+            }
+        }
+
+        // 8. Actualizar networks.json de manera segura
         try {
-            await execAsync(`docker run --rm -v "${networkDir}:/eth" ethereum/client-go:alltools-latest init /eth/genesis.json`)
+            console.log('Updating networks.json...');
+            // Agregar la nueva red al array
+            existingNetworks.push(newNetwork);
+        
+            // Escribir directamente al archivo final sin usar archivo temporal
+            const networkData = JSON.stringify(existingNetworks, null, 2);
+            
+            // Escribir de manera síncrona
+            fs.writeFileSync(NETWORKS_FILE, networkData, { encoding: 'utf8', flag: 'w' });
+            
+            // Verificar inmediatamente que se escribió correctamente
+            const verificationContent = fs.readFileSync(NETWORKS_FILE, 'utf8');
+            const verifiedNetworks = JSON.parse(verificationContent);
+            
+            if (verifiedNetworks.length !== existingNetworks.length) {
+                throw new Error('Network save verification failed');
+            }
+        
+            console.log(`Successfully wrote ${verifiedNetworks.length} networks to file`);
+            
+            // Eliminar el backup si todo salió bien
+            if (fs.existsSync(backupFile)) {
+                fs.unlinkSync(backupFile);
+            }
+        
         } catch (error) {
-            console.error('Error initializing geth:', error)
-            // Limpiar el directorio creado si hay error
-            fs.rmSync(networkDir, { recursive: true, force: true })
-            throw new Error('Failed to initialize geth directory')
+            console.error('Error updating networks.json:', error);
+            // Restaurar backup si existe
+            if (fs.existsSync(backupFile)) {
+                try {
+                    fs.copyFileSync(backupFile, NETWORKS_FILE);
+                    console.log('Restored backup file');
+                } catch (restoreError) {
+                    console.error('Error restoring backup:', restoreError);
+                }
+            }
+            throw new Error(`Failed to update networks configuration: ${error.message}`);
         }
 
-        // 7. Agregar la nueva red al archivo networks.json
-        networks.push(newNetwork)
-        fs.writeFileSync(NETWORKS_FILE, JSON.stringify(networks, null, 2))
-
-        res.status(201).send({
+        console.log('\n=== NETWORK CREATION COMPLETED SUCCESSFULLY ===');
+        res.status(201).json({
             message: 'Network created successfully',
-            network: newNetwork
-        })
+            network: newNetwork,
+            genesis: genesis
+        });
 
     } catch (error) {
-        console.error('Error creating network:', error)
-        res.status(500).send(`Error creating network: ${error.message}`)
+        console.error('\n=== ERROR CREATING NETWORK ===', error);
+        
+        // Limpiar directorio de red si se creó
+        if (newNetwork?.id) {
+            const networkDir = path.join(NETWORKS_DIR, newNetwork.id);
+            if (fs.existsSync(networkDir)) {
+                fs.rmSync(networkDir, { recursive: true, force: true });
+            }
+        }
+        
+        // Restaurar backup si existe
+        if (fs.existsSync(backupFile)) {
+            fs.copyFileSync(backupFile, NETWORKS_FILE);
+        }
+
+        // Enviar error a cliente
+        res.status(500).json({
+            error: 'Error creating network',
+            details: error.message
+        });
+    } finally {
+        // Limpiar archivos temporales
+        if (fs.existsSync(tempFile)) {
+            fs.unlinkSync(tempFile);
+        }
+        if (fs.existsSync(backupFile)) {
+            fs.unlinkSync(backupFile);
+        }
     }
 }
 
-// Mantener las funciones existentes
 export function networkDetails(req: Request, res: Response) {
     const networkId = req.params.id
     try {
@@ -136,4 +254,64 @@ export function networkDetails(req: Request, res: Response) {
     }
 }
 
+<<<<<<< HEAD
 
+=======
+export async function startNetwork(req: Request, res: Response) {
+    const networkId = req.params.id
+    try {
+        const data = fs.readFileSync(NETWORKS_FILE, "utf8")
+        const networks: Network[] = JSON.parse(data)
+        const network = networks.find((net) => net.id === networkId)
+        
+        if (!network) {
+            return res.status(404).send("Network not found")
+        }
+
+        // Iniciar la red
+        const docker = new DockerService()
+
+        // Inicializar los nodos
+        await docker.startNetwork(network)
+
+        res.status(200).send({
+            message: `Network ${networkId} started successfully`
+        })
+
+    } catch (error) {
+        console.error("Error starting network:", error)
+        res.status(500).send(`Error starting network: ${error.message}`)
+    }
+}
+
+export function deleteNetwork(req: Request, res: Response) {
+    const networkId = req.params.id;
+    try {
+        const data = fs.readFileSync(NETWORKS_FILE, 'utf8');
+        let networks: Network[] = JSON.parse(data);
+
+        // Encontrar la red por su ID
+        const networkIndex = networks.findIndex(net => net.id === networkId);
+        if (networkIndex === -1) {
+            return res.status(404).json({ message: 'Red no encontrada' });
+        }
+
+        // Eliminar la red del array
+        const [deletedNetwork] = networks.splice(networkIndex, 1);
+
+        // Actualizar el archivo networks.json
+        fs.writeFileSync(NETWORKS_FILE, JSON.stringify(networks, null, 2));
+
+        // Opcional: Eliminar la carpeta asociada a la red
+        const networkDir = path.join(NETWORKS_DIR, networkId);
+        if (fs.existsSync(networkDir)) {
+            fs.rmSync(networkDir, { recursive: true, force: true });
+        }
+
+        res.status(200).json({ message: 'Red eliminada correctamente', network: deletedNetwork });
+    } catch (error) {
+        console.error('Error al eliminar la red:', error);
+        res.status(500).json({ message: 'Error al eliminar la red', error: error.message });
+    }
+}
+>>>>>>> origin/T010-agregar-nodos
