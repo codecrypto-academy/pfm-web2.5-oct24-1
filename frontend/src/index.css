@@ -33,7 +33,7 @@ footer{
 
 .sidebar {
     width: 220px;
-    height: 100vh; /* Ocupar todo el alto de la ventana */
+    height: 99%; /* Ocupar todo el alto de la ventana */
     background-color: #3c4043; /* Color ligeramente más claro para diferenciar del header */
     color: #fff;
     padding-top: 20px; /* Espacio en la parte superior */
