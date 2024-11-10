@@ -37,7 +37,7 @@ export const NetworkList: React.FC = () => {
         {networks.map((network, index) => (
           <tr key={index}>
             <td>{network.chainId}</td>
-            <td><Link to={`/network/${network.id}`}>{network.id}</Link></td>
+            <td><Link to={`/networkdetails/${network.id}`}>{network.id}</Link></td>
             <td>Up/Down</td>
             <td><button onClick={async () => startNetwork()} >Start</button></td>
             <td><button>Stop</button></td>
