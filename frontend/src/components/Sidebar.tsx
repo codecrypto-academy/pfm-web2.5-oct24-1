@@ -15,11 +15,12 @@ export const Sidebar: React.FC = () =>{
                 </ul>
 
                 {location.pathname.includes('/networkdetails') && (
-                    <ul>
+                    <ul className='sidebar-submenu'>
+                        <h5 className='text-center'>Network:{id} </h5>
                         <li>
-                            <Link to={`/networkdetails/${id}`}>Network Details: {id}</Link>
+                            <Link to={`/networkdetails/${id}`}>Network Details</Link>
                         </li>
-                        <li>Operations</li>
+                        <li><Link>Operations</Link></li>
                     </ul>
 
                 )}
