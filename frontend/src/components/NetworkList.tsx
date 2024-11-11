@@ -70,7 +70,7 @@ export const NetworkList: React.FC = () => {
         {networks.map((network, index) => (
           <tr key={index}>
             <td>{network.chainId}</td>
-            <td><Link to={`/networkdetails/${network.id}`}>{network.id}</Link></td>
+            <td><Link to={`/network/${network.id}`}>{network.id}</Link></td>
             <td>Up/Down</td>
             <td><button className="btn btn-secondary" disabled={loadingId === network.id || disabledIds.has(network.id)} onClick={() => startNetworkCall(network.id)}>{loadingId === network.id ? "Starting..." : "Start Network"}</button></td>
             <td><button className="btn btn-secondary">Stop</button></td>

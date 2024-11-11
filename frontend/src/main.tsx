@@ -12,8 +12,10 @@ createRoot(document.getElementById('root')!).render(
       <BrowserRouter>
       <Routes>
         <Route path="/" element= {<App></App>}>
-            <Route path="/networklist" element={<NetworkList></NetworkList>}></Route>\
-            <Route path="/networkdetails/:id" element={<NetworkDetails></NetworkDetails>}></Route>
+            <Route index element={<NetworkList></NetworkList>} />
+            <Route path="*" element={<NetworkList></NetworkList>} />
+            <Route path="/networks" element={<NetworkList></NetworkList>}></Route>
+            <Route path="/network/:id" element={<NetworkDetails></NetworkDetails>}></Route>
         </Route>
       </Routes>
       </BrowserRouter>

@@ -10,17 +10,17 @@ export const Sidebar: React.FC = () =>{
             <h5 className='text-center'>Menu</h5>
             <nav>
                 <ul>
-                    <li><Link to="/networklist">Network list</Link></li>
+                    <li><Link to="/networks">Network list</Link></li>
                     <li><Link to="/">New network</Link></li>
                 </ul>
 
-                {location.pathname.includes('/networkdetails') && (
+                {location.pathname.includes('/network/') && (
                     <ul className='sidebar-submenu'>
                         <h5 className='text-center'>Network:{id} </h5>
                         <li>
-                            <Link to={`/networkdetails/${id}`}>Network Details</Link>
+                            <Link to={`/network/${id}`}>Network Details</Link>
                         </li>
-                        <li><Link>Operations</Link></li>
+                        <li><Link to={"#"}>Operations</Link></li>
                     </ul>
 
                 )}
