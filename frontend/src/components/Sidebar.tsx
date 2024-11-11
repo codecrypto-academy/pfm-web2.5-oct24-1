@@ -11,7 +11,7 @@ export const Sidebar: React.FC = () =>{
             <nav>
                 <ul>
                     <li><Link to="/networks">Network list</Link></li>
-                    <li><Link to="/">New network</Link></li>
+                    <li><Link to="/addnetwork">New network</Link></li>
                 </ul>
 
                 {location.pathname.includes('/network/') && (

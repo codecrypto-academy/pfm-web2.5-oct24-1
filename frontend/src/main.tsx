@@ -3,8 +3,11 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Route, Routes  } from 'react-router-dom'
 import {App} from './components/App'
 import { NetworkList } from './components/NetworkList'
-import './index.css'
 import { NetworkDetails } from './components/NetworkDetails'
+import {AddNetwork} from './components/AddNetwork'
+import './index.css'
+
+
 
 
 createRoot(document.getElementById('root')!).render(
@@ -16,6 +19,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="*" element={<NetworkList></NetworkList>} />
             <Route path="/networks" element={<NetworkList></NetworkList>}></Route>
             <Route path="/network/:id" element={<NetworkDetails></NetworkDetails>}></Route>
+            <Route path="/addnetwork" element={<AddNetwork></AddNetwork>}></Route>
         </Route>
       </Routes>
       </BrowserRouter>

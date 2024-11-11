@@ -72,3 +72,7 @@ footer{
 .sidebar .sidebar-submenu{
     padding: 16px;
 }
+
+form{
+    width: 80%
+}
