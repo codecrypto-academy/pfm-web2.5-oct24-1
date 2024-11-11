@@ -6,8 +6,8 @@ export const Sidebar: React.FC = () =>{
     const location = useLocation();
     const { id  } = useParams<{ id: string }>();
     return(
-        <aside className="sidebar text-white">
-            <h5 className='text-center'>Menu</h5>
+        <aside className="sidebar text-white ">
+            <h5 className='text-start ps-3'>Menu</h5>
             <nav>
                 <ul>
                     <li><Link to="/networks">Network list</Link></li>
@@ -16,7 +16,7 @@ export const Sidebar: React.FC = () =>{
 
                 {location.pathname.includes('/network/') && (
                     <ul className='sidebar-submenu'>
-                        <h5 className='text-center'>Network:{id} </h5>
+                        <h5 className='text-start ps-3'>Network: {id} </h5>
                         <li>
                             <Link to={`/network/${id}`}>Network Details</Link>
                         </li>

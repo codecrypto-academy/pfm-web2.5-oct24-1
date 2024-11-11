@@ -48,7 +48,7 @@ footer{
 
 .sidebar li {
     margin: 10px 0;
-    text-align: center;
+    text-align: left;
     border-bottom: 2px solid #495057; /* Línea de separación más oscura */
     padding: 5px 0; /* Espacio adicional en cada elemento */
 }
