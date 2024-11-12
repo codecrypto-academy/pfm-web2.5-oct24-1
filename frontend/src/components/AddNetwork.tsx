@@ -124,8 +124,8 @@ export const AddNetwork: React.FC = () => {
                     placeholder="0.0.0.0"
                     className={`form-control mb-1 ${errors.nodes?.[index]?.ip ? 'is-invalid' : ''}`}
                     />
-                    {/* Conditionally render the port input if node type is not miner */}
-                    {watch(`nodes.${index}.type`) !== "miner" && (
+                    {/* Conditionally render the port input if node type is rpc */}
+                    {watch(`nodes.${index}.type`) == "rpc" && (
                         <input
                         type="number"
                         {...register(`nodes.${index}.port`)}

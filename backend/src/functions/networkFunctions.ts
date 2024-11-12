@@ -70,8 +70,8 @@ export function listNetworks(req: Request, res: Response) {
 }
 
 export async function createNetwork(req: Request, res: Response) {
-    const backupFile = path.join(process.cwd(), 'src', 'data', 'networks.json.backup');
-    const tempFile = path.join(process.cwd(), 'src', 'data', 'networks.json.temp');
+    const backupFile = path.join(process.cwd(), 'data', 'networks.json.backup');
+    const tempFile = path.join(process.cwd(), 'data', 'networks.json.temp');
     let newNetwork: Network | null = null;  // Declarar fuera del try
 
     try {
@@ -82,7 +82,7 @@ export async function createNetwork(req: Request, res: Response) {
         console.log('New network data:', JSON.stringify(newNetwork, null, 2));
 
         // 2. Asegurarse de que el directorio data existe
-        const dataDir = path.join(process.cwd(), 'src', 'data');
+        const dataDir = path.join(process.cwd(), 'data');
         if (!fs.existsSync(dataDir)) {
             fs.mkdirSync(dataDir, { recursive: true });
         }
