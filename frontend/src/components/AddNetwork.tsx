@@ -1,10 +1,27 @@
 import React from 'react';
 import { Network } from '../../../backend/src/types/network';
-import { useForm, SubmitHandler, useFieldArray } from 'react-hook-form';
+import { useForm, SubmitHandler, useFieldArray} from 'react-hook-form';
 
 export const AddNetwork: React.FC = () => {
-    const { register, handleSubmit, control, formState: { errors }, setError} = useForm<Network>();
+    const { register, handleSubmit, control, formState: { errors }, setError, watch} = useForm<Network>();
     const onSubmit: SubmitHandler<Network> = async  data =>{
+        // convert chainId to number
+        data.chainId = data.chainId ? Number(data.chainId) : 0 
+
+        // convert each alloc entry's value into number
+        data.alloc = data.alloc.map(allocEntry => ({
+            ...allocEntry,
+            value: allocEntry.value ? Number(allocEntry.value) :0
+        }) )
+
+        // convert each node's port int number
+        data.nodes = data.nodes.map(nodeEntry => ({
+            ...nodeEntry,
+            port: nodeEntry.port !== null ? Number(nodeEntry.port) : null // Convert port to number if not null
+        }));
+
+        console.log(data)
+
         if (data.alloc.length === 0 || data.nodes.length === 0) {
             // Si no hay elementos en alguno de los arreglos, establecemos un error
             setError("alloc", { type: "manual", message: "At least one alloc entry is required." });
@@ -54,13 +71,13 @@ export const AddNetwork: React.FC = () => {
             <div className="mb-3">
                 <label htmlFor="">Subnet</label>
                 <input {...register("subnet",{required: "Subnet is required" }) } 
-                type="text"  placeholder='x.x.x.0/24'  className={`form-control ${errors.chainId ? 'is-invalid' : ''}`}/>
+                type="text"  placeholder='x.x.x.0/24'  className={`form-control ${errors.subnet ? 'is-invalid' : ''}`}/>
                 {errors.subnet && <p  className='text-danger'>{errors.subnet.message}</p>}
             </div>
             <div className="mb-3">
                 <label htmlFor="">IP Boot Node</label>
                 <input {...register("ipBootNode",{required: "Ip Boot Node is required" }) }
-                 type="text"  placeholder='x.x.x.10'  className={`form-control ${errors.chainId ? 'is-invalid' : ''}`}/>
+                 type="text"  placeholder='x.x.x.10'  className={`form-control ${errors.ipBootNode ? 'is-invalid' : ''}`}/>
                 {errors.ipBootNode && <p className='text-danger'>{errors.ipBootNode.message}</p>}
             </div>
 
@@ -107,12 +124,15 @@ export const AddNetwork: React.FC = () => {
                     placeholder="0.0.0.0"
                     className={`form-control mb-1 ${errors.nodes?.[index]?.ip ? 'is-invalid' : ''}`}
                     />
-                    <input
-                    type="number"
-                    {...register(`nodes.${index}.port`)}
-                    placeholder="1234 (Optional)"
-                    className="form-control"
-                    />
+                    {/* Conditionally render the port input if node type is not miner */}
+                    {watch(`nodes.${index}.type`) !== "miner" && (
+                        <input
+                        type="number"
+                        {...register(`nodes.${index}.port`)}
+                        placeholder="1234 (Optional)"
+                        className="form-control"
+                        />
+                    )}
                 </div>
                 ))}
                 {errors.nodes && <p className="text-danger">{errors.nodes.message}</p>}
