@@ -5,7 +5,7 @@ export interface Node {
     id: string,
     type:typeOptions
     ip: string, 
-    port?: number
+    port?: number | null
 }
 
 export interface RPCNode extends Node {
