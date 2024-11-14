@@ -8,6 +8,7 @@ export class DockerService {
     private docker: Docker;
     private readonly NETWORKS_DIR: string;
     private readonly GETH_VERSION = 'v1.13.15';
+    private readonly GETH_ALLTOOLS_VERSION = 'alltools-v1.13.15'
     private readonly GETH_IMAGE = 'ethereum/client-go';
 
     constructor() {
@@ -17,7 +18,7 @@ export class DockerService {
 
     async pullGethImage(): Promise<void> {
         const imageTag = `${this.GETH_IMAGE}:${this.GETH_VERSION}`;
-        console.log('Pulling Geth ${this.GETH_IMAGE} ${this.GETH_VERSION}...');
+        console.log(`Pulling Geth ${this.GETH_IMAGE} ${this.GETH_VERSION}...`);
         try {
             await new Promise((resolve, reject) => {
             this.docker.pull(imageTag, (error:any, stream: any) => {
@@ -38,10 +39,11 @@ export class DockerService {
         }
     }
 
-    private getBootnodeCommand(networkId: string, ipBootNode: string): string[] {
+    private getBootnodeCommand(networkId: string, ipBootNode: string, subnet: string): string[] {
         return [
+            `--addr ${ipBootNode}:30301`,
             '--nodekeyhex=91db994584cf2565fa19d0f6980696f06822a8cf78c8085f95f4f7839878b1cb',
-            `--netrestrict=${ipBootNode}/24`,
+            `--netrestrict=${subnet}`,
             '--nat=extip:127.0.0.1',
             '--verbosity=3'
         ];
@@ -83,45 +85,145 @@ export class DockerService {
         ];
     }
 
-    async startBootnode(networkId: string, ipBootNode: string): Promise<string> {
+    async createBootnodeAccount(networkId: string){
+        const bootnodeDir = path.join(this.NETWORKS_DIR, networkId, 'bootnode')
+        const containerName = `${networkId}-bootnode`
+        const imageTag = `${this.GETH_IMAGE}:${this.GETH_VERSION}`
+        try {
+            //Verificar si el contenedor ya existe
+            const existingContainer = await this.docker.getContainer(containerName)
+            try {
+                await existingContainer.stop();
+                await existingContainer.remove( { force: true });
+                console.log(`Removed existing bootnode container: ${containerName}`)
+            }
+            catch (error) {
+                console.log(`No existing bootnode container found: ${containerName}`)
+            }
+
+            const container = await this.docker.createContainer({
+                Image: imageTag,
+                name:containerName,
+                Tty: true,
+                Entrypoint: ['geth'],
+                Cmd: [
+                    '--password', '/eth/password.txt', 
+                    '--datadir', '/eth',
+                    'account', 'new' 
+                ],
+                HostConfig: {
+                    AutoRemove: true,
+                    Binds: [`${bootnodeDir}:/eth`]
+                }
+            })
+
+            await container.start()
+            const stream = await container.logs({ follow:true, stdout:true, stderr:true })
+            stream.on('data', (data) => { console.log(data.toString()) })
+            await container.wait()
+            console.log('Bootnode Account created')
+        } catch (error) {
+            throw new Error(`Error creating bootnode account: ${error.message}`);            
+        }
+    }
+
+    async initializeBootnodeKeys(networkId: string) {
+        const bootnodeDir = path.join(this.NETWORKS_DIR, networkId, 'bootnode')
+        const containerName = `${networkId}-bootnode`
+        const imageTag = `${this.GETH_IMAGE}:${this.GETH_ALLTOOLS_VERSION}`
+        try {
+            //Verificar si el contenedor ya existe
+            const existingContainer = await this.docker.getContainer(containerName)
+            try {
+                await existingContainer.stop();
+                await existingContainer.remove( { force: true });
+                console.log(`Removed existing bootnode container: ${containerName}`)
+            }
+            catch (error) {
+                console.log(`No existing bootnode container found: ${containerName}`)
+            }
+            // Crea un contenedor para inicializar las llaves del bootnode
+            const container = await this.docker.createContainer({
+                Image: imageTag,
+                name: containerName,
+                Tty: true,
+                Entrypoint: ["bootnode"],  // Entrypoint for bootnode command
+                Cmd: [
+                    "-genkey", "/eth/boot.key",
+                    "-writeaddress"
+                ],
+                HostConfig: {
+                    AutoRemove: true,
+                    Binds: [
+                        `${bootnodeDir}:/eth`
+                    ]
+                }
+            });
+    
+            // Start and log output
+            await container.start();
+            const stream = await container.logs({ follow: true, stdout: true, stderr: true })
+            let publicKey = ''
+            stream.on('data', data => publicKey += data.toString())
+            await container.wait();  // Wait for the container to complete
+
+            const publicKeyPath = path.join(bootnodeDir, 'public.key')
+            fs.writeFileSync(publicKeyPath, publicKey.trim())
+            
+            console.log(`Bootnode's public key written to ${bootnodeDir}` )
+            console.log('Bootnode keys initialized successfully')            
+        } catch (error) {
+            throw new Error(`Error initializing bootnode keys: ${error.message}`)
+        }
+    }
+
+    async initializeBootnode(networkId: string){
+        try {
+            await this.createBootnodeAccount(networkId)
+            await this.initializeBootnodeKeys(networkId)
+        } catch (error) {
+            throw new Error(`Error initializing bootnode: ${error.message}`)
+        }
+    }
+
+    async startBootnode(networkId: string, ipBootNode: string, subnet: string): Promise<string> {
         const networkDir = path.join(this.NETWORKS_DIR, networkId);
         const containerName = `${networkId}-bootnode`;
         const imageTag = `${this.GETH_IMAGE}:${this.GETH_VERSION}`;
 
         try {
-
-        //Verificar si el contenedor ya existe
-        const existingContainer = await this.docker.getContainer(containerName);
-        try {
-            await existingContainer.stop();
-            await existingContainer.remove( { force: true });
-            console.log(`Removed existing bootnode container: ${containerName}`);
-        }
-        catch (error) {
-            console.log(`No existing bootnode container found: ${containerName}`);
-        }
-
-        const container = await this.docker.createContainer({
-            Image: imageTag,
-            name: containerName,
-            Cmd: this.getBootnodeCommand(networkId, ipBootNode),
-            HostConfig: {
-                Binds: [`${networkDir}:/eth`],
-                NetworkMode: networkId
+            //Verificar si el contenedor ya existe
+            const existingContainer = await this.docker.getContainer(containerName);
+            try {
+                await existingContainer.stop();
+                await existingContainer.remove( { force: true });
+                console.log(`Removed existing bootnode container: ${containerName}`);
             }
-        });
+            catch (error) {
+                console.log(`No existing bootnode container found: ${containerName}`);
+            }
 
-        await container.start();
-        console.log(`Started bootnode container: ${containerName}`);
+            const container = await this.docker.createContainer({
+                Image: imageTag,
+                name: containerName,
+                Cmd: this.getBootnodeCommand(networkId, ipBootNode, subnet),
+                HostConfig: {
+                    Binds: [`${networkDir}:/eth`],
+                    NetworkMode: networkId
+            }
+            });
 
-        // Esperar unos segundos para que el bootnode se inicie completamente
-        await new Promise(resolve => setTimeout(resolve, 5000));
+            await container.start();
+            console.log(`Started bootnode container: ${containerName}`);
 
-        // Retornar el enode URL del bootnode
-        return `enode://91db994584cf2565fa19d0f6980696f06822a8cf78c8085f95f4f7839878b1cb@${ipBootNode}:30303`;
-    } catch (error) {
-        throw new Error(`Failed to start bootnode: ${error.message}`);
-    }
+            // Esperar unos segundos para que el bootnode se inicie completamente
+            await new Promise(resolve => setTimeout(resolve, 5000));
+
+            // Retornar el enode URL del bootnode
+            return `enode://91db994584cf2565fa19d0f6980696f06822a8cf78c8085f95f4f7839878b1cb@${ipBootNode}:30303`;
+        }catch (error) {
+            throw new Error(`Failed to start bootnode: ${error.message}`);
+        }
     }
 
     async startNode(
@@ -212,7 +314,7 @@ export class DockerService {
             await this.createDockerNetwork(network.id, network.subnet);
 
             // 3. Iniciar el bootnode
-            const bootnodeEnode = await this.startBootnode(network.id, network.ipBootNode);
+            const bootnodeEnode = await this.startBootnode(network.id, network.ipBootNode, network.subnet);
 
             // 3. Iniciar los nodos
             for (const node of network.nodes) {

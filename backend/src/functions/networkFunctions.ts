@@ -135,11 +135,34 @@ export async function createNetwork(req: Request, res: Response) {
         fs.mkdirSync(networkDir, { recursive: true });
 
         // 6. Crear y guardar genesis
+        console.log(`Creating genesis file`);
         const genesis = generateGenesisFile(newNetwork);
         const genesisPath = path.join(networkDir, 'genesis.json');
         fs.writeFileSync(genesisPath, JSON.stringify(genesis, null, 2));
 
-        // 7. Inicializar nodos
+        //7. Crear y generar password
+        console.log('Creating password')
+        const passwordPath = path.join(networkDir, 'password.txt')
+        fs.writeFileSync(passwordPath, '123456')
+
+        // 7. Inicializar bootnode
+        console.log(`Initializing bootnode`);
+        const bootnodeDir = path.join(networkDir, 'bootnode')
+        fs.mkdirSync(bootnodeDir, { recursive: true})
+        const nodeGenesisPath = path.join(bootnodeDir, 'genesis.json');
+        fs.copyFileSync(genesisPath, nodeGenesisPath);
+        const nodePasswordPath = path.join(bootnodeDir, 'password.txt');
+        fs.copyFileSync(passwordPath, nodePasswordPath);
+        
+        const docker = new DockerService()
+        
+        try {
+            await docker.initializeBootnode(newNetwork.id) 
+        } catch (error) {
+            throw new Error(`Failed to initialize bootnode: ${error.message}`);
+        }
+
+        // 8. Inicializar nodos
         for (const node of newNetwork.nodes) {
             const nodeDir = path.join(networkDir, node.name);
             fs.mkdirSync(nodeDir, { recursive: true });
@@ -155,7 +178,7 @@ export async function createNetwork(req: Request, res: Response) {
             }
         }
 
-        // 8. Actualizar networks.json de manera segura
+        // 9. Actualizar networks.json de manera segura
         try {
             console.log('Updating networks.json...');
             // Agregar la nueva red al array
