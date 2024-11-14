@@ -130,9 +130,12 @@ dist
 .pnp.*
 
 
-# ignore data and networks foler
-backend/data/**/*
-backend/networks/**/*
+# ignore data and networks folder
+backend/data/
+backend/networks/
 
 # ignore nodemon.json
 nodemon.json
+
+# ignore genesis.json
+genesis.json

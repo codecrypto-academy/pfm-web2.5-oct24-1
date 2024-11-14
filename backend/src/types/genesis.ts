@@ -7,9 +7,9 @@ export interface GenesisConfig {
     byzantiumBlock: number;
     constantinopleBlock: number;
     petersburgBlock: number;
-    istanbulBlock: number;
-    berlinBlock: number;
-    londonBlock: number;
+    istanbulBlock?: number;
+    berlinBlock?: number;
+    londonBlock?: number;
     clique?: {
         period: number;
         epoch: number;

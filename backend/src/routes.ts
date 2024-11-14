@@ -1,5 +1,5 @@
 import express, { Request, Response, Router } from 'express'
-import { networkDetails, createNetwork, listNetworks } from './functions/networkFunctions'
+import { networkDetails, createNetwork, listNetworks, startNetwork, deleteNetwork } from './functions/networkFunctions'
 
 const router: Router = express.Router();
 

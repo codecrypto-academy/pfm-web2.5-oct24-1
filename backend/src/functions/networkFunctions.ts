@@ -3,7 +3,7 @@ import { Request, Response } from 'express';
 import { isNetworkArray, validateNetwork, isNetwork } from '../validations/networkValidations';
 import { GenesisFile, GenesisConfig } from '../types/genesis';
 import fs from 'fs';
-import { exec } from 'child_process';
+import { exec, execSync } from 'child_process';
 import { promisify } from 'util';
 import path from 'path';
 import { DockerService } from '../services/dockerService';
@@ -70,6 +70,7 @@ export function listNetworks(req: Request, res: Response) {
 }
 
 export async function createNetwork(req: Request, res: Response) {
+    const docker = new DockerService()
     const backupFile = path.join(process.cwd(), 'data', 'networks.json.backup');
     const tempFile = path.join(process.cwd(), 'data', 'networks.json.temp');
     let newNetwork: Network | null = null;  // Declarar fuera del try
@@ -149,17 +150,15 @@ export async function createNetwork(req: Request, res: Response) {
         console.log(`Initializing bootnode`);
         const bootnodeDir = path.join(networkDir, 'bootnode')
         fs.mkdirSync(bootnodeDir, { recursive: true})
-        const nodeGenesisPath = path.join(bootnodeDir, 'genesis.json');
-        fs.copyFileSync(genesisPath, nodeGenesisPath);
-        const nodePasswordPath = path.join(bootnodeDir, 'password.txt');
-        fs.copyFileSync(passwordPath, nodePasswordPath);
-        
-        const docker = new DockerService()
+        const bootnodeGenesisPath = path.join(bootnodeDir, 'genesis.json');
+        fs.copyFileSync(genesisPath, bootnodeGenesisPath);
+        const bootnodePasswordPath = path.join(bootnodeDir, 'password.txt');
+        fs.copyFileSync(passwordPath, bootnodePasswordPath);
         
         try {
             await docker.initializeBootnode(newNetwork.id) 
         } catch (error) {
-            throw new Error(`Failed to initialize bootnode: ${error.message}`);
+            throw new Error(`Failed to initialize bootnode: ${error.message}`)
         }
 
         // 8. Inicializar nodos
@@ -169,10 +168,22 @@ export async function createNetwork(req: Request, res: Response) {
             
             const nodeGenesisPath = path.join(nodeDir, 'genesis.json');
             fs.copyFileSync(genesisPath, nodeGenesisPath);
+            
+            // crea una cuanta si el nodo es minero
+            if (node.type == 'miner'){
+                const nodePasswordPath = path.join(nodeDir, 'password.txt')
+                fs.copyFileSync(passwordPath, nodePasswordPath)
+                try {
+                    await docker.createNodeAccount(newNetwork.id, node.name)
+                } catch (error) {
+                    throw new Error(`Failed to create miner ${node.name} node: ${error.message}`)
+                }
+            } 
 
             try {
-                const initCommand = `docker run --rm -v "${nodeDir}:/eth" ethereum/client-go:${GETH_VERSION} init /eth/genesis.json`;
-                await execAsync(initCommand);
+                console.log(`Initializing genesis block in ${node.name}`)
+                const initCommand = `docker run --rm -v "${nodeDir}:/eth" ethereum/client-go:${GETH_VERSION} init --datadir /eth /eth/genesis.json`;
+                execSync(initCommand);
             } catch (error) {
                 throw new Error(`Failed to initialize node ${node.name}: ${error.message}`);
             }

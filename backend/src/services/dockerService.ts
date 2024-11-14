@@ -85,20 +85,20 @@ export class DockerService {
         ];
     }
 
-    async createBootnodeAccount(networkId: string){
-        const bootnodeDir = path.join(this.NETWORKS_DIR, networkId, 'bootnode')
-        const containerName = `${networkId}-bootnode`
+    async createNodeAccount(networkId: string, nodeName: string){
+        const nodeDir = path.join(this.NETWORKS_DIR, networkId, nodeName)
+        const containerName = `${networkId}-${nodeName}`
         const imageTag = `${this.GETH_IMAGE}:${this.GETH_VERSION}`
         try {
             //Verificar si el contenedor ya existe
-            const existingContainer = await this.docker.getContainer(containerName)
+            const existingContainer = this.docker.getContainer(containerName)
             try {
                 await existingContainer.stop();
                 await existingContainer.remove( { force: true });
-                console.log(`Removed existing bootnode container: ${containerName}`)
+                console.log(`Removed existing ${nodeName} container: ${containerName}`)
             }
             catch (error) {
-                console.log(`No existing bootnode container found: ${containerName}`)
+                console.log(`No existing ${nodeName} container found: ${containerName}`)
             }
 
             const container = await this.docker.createContainer({
@@ -113,7 +113,7 @@ export class DockerService {
                 ],
                 HostConfig: {
                     AutoRemove: true,
-                    Binds: [`${bootnodeDir}:/eth`]
+                    Binds: [`${nodeDir}:/eth`]
                 }
             })
 
@@ -121,9 +121,52 @@ export class DockerService {
             const stream = await container.logs({ follow:true, stdout:true, stderr:true })
             stream.on('data', (data) => { console.log(data.toString()) })
             await container.wait()
-            console.log('Bootnode Account created')
+            console.log(`${nodeName} account created`)
         } catch (error) {
-            throw new Error(`Error creating bootnode account: ${error.message}`);            
+            throw new Error(`Error creating ${nodeName} account: ${error.message}`);            
+        }
+    }
+
+    async initializeGenesisBlock(networkId: string, nodeName: string) {
+        const nodeDir = path.join(this.NETWORKS_DIR, networkId, nodeName)
+        const containerName = `${networkId}-${nodeName}-init`
+        const imageTag = `${this.GETH_IMAGE}:${this.GETH_VERSION}`
+        
+        try {
+             //Verificar si el contenedor ya existe
+             const existingContainer = this.docker.getContainer(containerName)
+             try {
+                 await existingContainer.stop();
+                 await existingContainer.remove( { force: true });
+                 console.log(`Removed existing ${nodeName} container: ${containerName}`)
+             }
+             catch (error) {
+                 console.log(`No existing ${nodeName} container found: ${containerName}`)
+             }
+             
+            // Create and start the container with the Geth init command
+            const container = await this.docker.createContainer({
+                Image: imageTag,
+                name: containerName,
+                Tty: true,
+                Cmd: ['geth', 'init', '--datadir', '/eth', '/eth/genesis.json'],
+                HostConfig: {
+                    AutoRemove: true,
+                    Binds: [`${nodeDir}:/eth`], // Mount the host directory to /eth in the container
+                },
+            });
+    
+            await container.start();
+            const stream = await container.logs({ follow:true, stdout:true, stderr:true })
+            stream.on('data', (data) => { console.log(data.toString()) })
+            const result = await container.wait() // Wait for the container to complete initialization
+            if (result.StatusCode !== 0) {
+                throw new Error(`Genesis block initialization failed with status code: ${result.StatusCode}`)
+            }
+    
+            console.log(`Genesis block initialized successfully in ${nodeName}`)
+        } catch (error) {
+            throw new Error(`Failed to initialize node ${nodeName}: ${error.message}`)
         }
     }
 
@@ -133,7 +176,7 @@ export class DockerService {
         const imageTag = `${this.GETH_IMAGE}:${this.GETH_ALLTOOLS_VERSION}`
         try {
             //Verificar si el contenedor ya existe
-            const existingContainer = await this.docker.getContainer(containerName)
+            const existingContainer = this.docker.getContainer(containerName)
             try {
                 await existingContainer.stop();
                 await existingContainer.remove( { force: true });
@@ -170,7 +213,7 @@ export class DockerService {
             const publicKeyPath = path.join(bootnodeDir, 'public.key')
             fs.writeFileSync(publicKeyPath, publicKey.trim())
             
-            console.log(`Bootnode's public key written to ${bootnodeDir}` )
+            console.log(`Bootnode public key written to ${bootnodeDir}` )
             console.log('Bootnode keys initialized successfully')            
         } catch (error) {
             throw new Error(`Error initializing bootnode keys: ${error.message}`)
@@ -179,8 +222,9 @@ export class DockerService {
 
     async initializeBootnode(networkId: string){
         try {
-            await this.createBootnodeAccount(networkId)
+            await this.createNodeAccount(networkId, 'bootnode')
             await this.initializeBootnodeKeys(networkId)
+            console.log('Bootnode initialized successfully') 
         } catch (error) {
             throw new Error(`Error initializing bootnode: ${error.message}`)
         }
@@ -193,7 +237,7 @@ export class DockerService {
 
         try {
             //Verificar si el contenedor ya existe
-            const existingContainer = await this.docker.getContainer(containerName);
+            const existingContainer = this.docker.getContainer(containerName);
             try {
                 await existingContainer.stop();
                 await existingContainer.remove( { force: true });
