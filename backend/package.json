@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node dist/app.js",
-    "dev": "nodemon --ignore 'src/data/*' --ignore 'networks/*' src/app.ts",
+    "dev": "nodemon --config --ignore 'data/**/*' --ignore 'networks/**/*' src/app.ts",
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
