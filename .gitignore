@@ -130,8 +130,9 @@ dist
 .pnp.*
 
 
-# Ignorar carpeta data
-back/data/*
-!back/data/*.txt
-!back/data/*.md
-!back/data/nodekey
+# ignore data and networks foler
+backend/data/**/*
+backend/networks/**/*
+
+# ignore nodemon.json
+nodemon.json
