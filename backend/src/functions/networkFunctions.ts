@@ -22,6 +22,7 @@ function generateExtradata(addresses: string[]): string{
     // validate addresses
     const addressRegex = /^[a-fA-F0-9]{40}$/ // Regex to match a 40-character hexadecimal string
     for (let address of addresses) {
+        console.log(address)
         if (!addressRegex.test(address)) {
             throw new Error('one of the addresses is not a 40-character hexadecimal string')
         }
@@ -173,7 +174,8 @@ export async function createNetwork(req: Request, res: Response) {
         fs.copyFileSync(passwordPath, bootnodePasswordPath);
         
         try {
-            await docker.initializeBootnode(newNetwork.id) 
+            const address = await docker.initializeBootnode(newNetwork.id)
+            addresses.push(address) 
         } catch (error) {
             throw new Error(`Failed to initialize bootnode: ${error.message}`)
         }
@@ -191,7 +193,8 @@ export async function createNetwork(req: Request, res: Response) {
                 const nodePasswordPath = path.join(nodeDir, 'password.txt')
                 fs.copyFileSync(passwordPath, nodePasswordPath)
                 try {
-                    await docker.createNodeAccount(newNetwork.id, node.name)
+                    const address = await docker.createNodeAccount(newNetwork.id, node.name)
+                    addresses.push(address)
                 } catch (error) {
                     throw new Error(`Failed to create miner ${node.name} node: ${error.message}`)
                 }
@@ -204,6 +207,8 @@ export async function createNetwork(req: Request, res: Response) {
                 throw new Error(`Failed to initialize node ${node.name}: ${error.message}`);
             }
         }
+
+        console.log(addresses)
 
         // 9. Actualizar networks.json de manera segura
         try {

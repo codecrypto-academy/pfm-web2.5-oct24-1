@@ -85,7 +85,7 @@ export class DockerService {
         ];
     }
     // creates a node account and returns the address string
-    async createNodeAccount(networkId: string, nodeName: string){
+    async createNodeAccount(networkId: string, nodeName: string): Promise<string>{
         const nodeDir = path.join(this.NETWORKS_DIR, networkId, nodeName)
         const containerName = `${networkId}-${nodeName}`
         const imageTag = `${this.GETH_IMAGE}:${this.GETH_VERSION}`
@@ -116,12 +116,31 @@ export class DockerService {
                     Binds: [`${nodeDir}:/eth`]
                 }
             })
-
             await container.start()
+            
+            // capture logs and extract the account address
             const stream = await container.logs({ follow:true, stdout:true, stderr:true })
-            stream.on('data', (data) => { console.log(data.toString()) })
-            await container.wait()
+            const addressRegex = /Public address of the key:\s*(0x[a-fA-F0-9]+)/
+            
+            let accountAddress:string = null
+            stream.on('data', (data) => {
+                const logData = data.toString() 
+                console.log(logData)
+
+                const match = addressRegex.exec(logData)
+                if(match && match[1]) {
+                    accountAddress = match[1].replace(/^0x/, '')
+                }
+            })
+            // wait for the container to stop
+            await container.wait() 
             console.log(`${nodeName} account created`)
+            if(accountAddress) {
+                console.log(`${nodeName} addres: ${accountAddress}`)
+                return accountAddress
+            } else {
+                throw new Error('Failed to extract account addres from logs')
+            }
         } catch (error) {
             throw new Error(`Error creating ${nodeName} account: ${error.message}`);            
         }
@@ -221,11 +240,12 @@ export class DockerService {
         }
     }
 
-    async initializeBootnode(networkId: string){
+    async initializeBootnode(networkId: string): Promise<string>{
         try {
-            await this.createNodeAccount(networkId, 'bootnode')
+            const address = await this.createNodeAccount(networkId, 'bootnode')
             await this.initializeBootnodeKeys(networkId)
-            console.log('Bootnode initialized successfully') 
+            console.log('Bootnode initialized successfully')
+            return address 
         } catch (error) {
             throw new Error(`Error initializing bootnode: ${error.message}`)
         }
