@@ -3,12 +3,9 @@ import { Request, Response } from 'express';
 import { isNetworkArray, validateNetwork, isNetwork } from '../validations/networkValidations';
 import { GenesisFile, GenesisConfig } from '../types/genesis';
 import fs from 'fs';
-import { exec, execSync } from 'child_process';
-import { promisify } from 'util';
-import path from 'path';
+import path, { join } from 'path';
 import { DockerService } from '../services/dockerService';
 
-const execAsync = promisify(exec);
 const GETH_VERSION = 'v1.13.15';
 
 // Definir rutas base
@@ -21,7 +18,24 @@ if (!fs.existsSync(NETWORKS_DIR)) {
     fs.mkdirSync(NETWORKS_DIR, { recursive: true });
 }
 
-function generateGenesisFile(network: Network): GenesisFile {
+function generateExtradata(addresses: string[]): string{
+    // validate addresses
+    const addressRegex = /^[a-fA-F0-9]{40}$/ // Regex to match a 40-character hexadecimal string
+    for (let address of addresses) {
+        if (!addressRegex.test(address)) {
+            throw new Error('one of the addresses is not a 40-character hexadecimal string')
+        }
+    }
+
+    const zerosFront = "00".repeat(32) //32-bytes of zeroes
+    const zerosBack = "00".repeat(65) // 65-bytes of zeroes
+    const joinedAddresses = addresses.join('')
+    const extradata = '0x' + zerosFront + joinedAddresses + zerosBack
+    
+    return extradata       
+}
+
+function generateGenesisFile(network: Network, addresses: string[]): GenesisFile {
     const config: GenesisConfig = {
         chainId: network.chainId,
         homesteadBlock: 0,
@@ -31,10 +45,10 @@ function generateGenesisFile(network: Network): GenesisFile {
         byzantiumBlock: 0,
         constantinopleBlock: 0,
         petersburgBlock: 0,
-        istanbulBlock: 0,
-        berlinBlock: 0,
-        londonBlock: 0,
-        ethash: {}
+        clique: {
+            "period": 15,
+            "epoch": 30000
+        }
     };
 
     const alloc: { [key: string]: { balance: string } } = {};
@@ -45,11 +59,12 @@ function generateGenesisFile(network: Network): GenesisFile {
         };
     });
 
+    const extradata = generateExtradata(addresses)
     return {
         config,
         difficulty: "1",
         gasLimit: "8000000",
-        extradata: "0x0000000000000000000000000000000000000000000000000000000000000000",
+        extradata,
         alloc
     };
 }
@@ -135,9 +150,11 @@ export async function createNetwork(req: Request, res: Response) {
         
         fs.mkdirSync(networkDir, { recursive: true });
 
-        // 6. Crear y guardar genesis
+        // 6. Crear y guardar 
+        const addresses = ["123456789abcdef123456789abcdef123456789a"]
         console.log(`Creating genesis file`);
-        const genesis = generateGenesisFile(newNetwork);
+        const genesis = generateGenesisFile(newNetwork, addresses);
+        console.log(JSON.stringify(genesis, null, 2))
         const genesisPath = path.join(networkDir, 'genesis.json');
         fs.writeFileSync(genesisPath, JSON.stringify(genesis, null, 2));
 
@@ -146,7 +163,7 @@ export async function createNetwork(req: Request, res: Response) {
         const passwordPath = path.join(networkDir, 'password.txt')
         fs.writeFileSync(passwordPath, '123456')
 
-        // 7. Inicializar bootnode
+        // 8. Inicializar bootnode
         console.log(`Initializing bootnode`);
         const bootnodeDir = path.join(networkDir, 'bootnode')
         fs.mkdirSync(bootnodeDir, { recursive: true})
@@ -161,7 +178,7 @@ export async function createNetwork(req: Request, res: Response) {
             throw new Error(`Failed to initialize bootnode: ${error.message}`)
         }
 
-        // 8. Inicializar nodos
+        // 9. Inicializar nodos
         for (const node of newNetwork.nodes) {
             const nodeDir = path.join(networkDir, node.name);
             fs.mkdirSync(nodeDir, { recursive: true });
@@ -182,8 +199,7 @@ export async function createNetwork(req: Request, res: Response) {
 
             try {
                 console.log(`Initializing genesis block in ${node.name}`)
-                const initCommand = `docker run --rm -v "${nodeDir}:/eth" ethereum/client-go:${GETH_VERSION} init --datadir /eth /eth/genesis.json`;
-                execSync(initCommand);
+                await docker.initializeGenesisBlock(newNetwork.id, node.name)
             } catch (error) {
                 throw new Error(`Failed to initialize node ${node.name}: ${error.message}`);
             }

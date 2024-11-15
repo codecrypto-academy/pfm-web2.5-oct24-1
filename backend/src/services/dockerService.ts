@@ -84,7 +84,7 @@ export class DockerService {
             '--verbosity=3'
         ];
     }
-
+    // creates a node account and returns the address string
     async createNodeAccount(networkId: string, nodeName: string){
         const nodeDir = path.join(this.NETWORKS_DIR, networkId, nodeName)
         const containerName = `${networkId}-${nodeName}`
@@ -149,7 +149,8 @@ export class DockerService {
                 Image: imageTag,
                 name: containerName,
                 Tty: true,
-                Cmd: ['geth', 'init', '--datadir', '/eth', '/eth/genesis.json'],
+                Entrypoint: ['geth'],
+                Cmd: ['init', '--datadir', '/eth', '/eth/genesis.json'],
                 HostConfig: {
                     AutoRemove: true,
                     Binds: [`${nodeDir}:/eth`], // Mount the host directory to /eth in the container
