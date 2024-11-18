@@ -39,49 +39,47 @@ export class DockerService {
         }
     }
 
-    private getBootnodeCommand(networkId: string, ipBootNode: string, subnet: string): string[] {
+    private getBootnodeCommand(ipBootNode: string, subnet: string): string[] {
         return [
-            `--addr ${ipBootNode}:30301`,
-            '--nodekeyhex=91db994584cf2565fa19d0f6980696f06822a8cf78c8085f95f4f7839878b1cb',
-            `--netrestrict=${subnet}`,
-            '--nat=extip:127.0.0.1',
-            '--verbosity=3'
-        ];
+            `-addr=${ipBootNode}:30301`,
+            '-nodekey=/eth/boot.key',
+            `-netrestrict=${subnet}`,
+        ]
     }
 
-    private getMinerCommand(bootnodeEnode: string): string[] {
+    private getMinerCommand(chainId: number, accountAddress: string, ipNode: string, subnet: string, bootnodeEnode: string): string[] {
         return [
+            `--networkid=${chainId}`,
             '--mine',
-            '--miner.threads=1',
-            '--miner.etherbase=0x0000000000000000000000000000000000000000',
+            `--miner.etherbase=0x${accountAddress}`,
             `--bootnodes=${bootnodeEnode}`,
-            '--http',
-            '--http.api=eth,web3,net,admin,personal',
-            '--http.addr=0.0.0.0',
-            '--http.corsdomain=*',
-            '--nat=extip:127.0.0.1',
-            '--verbosity=3'
+            `--nat=extip:${ipNode}`,
+            `--netrestrict=${subnet}`,
+            `--unlock=${accountAddress}`,
+            `--password=/root/.ethereum/password.txt` 
         ];
     }
 
-    private getRpcCommand(bootnodeEnode: string, port: number): string[] {
+    private getRpcCommand(chainId: number, ipNode: string, subnet: string, bootnodeEnode: string, nodePort: number): string[] {
         return [
+            `--networkid=${chainId}`,
             '--http',
-            '--http.api=eth,web3,net,admin,personal',
             '--http.addr=0.0.0.0',
-            `--http.port=${port}`,
-            '--http.corsdomain=*',
+            `--http.port=${nodePort}`,
+            '--http.corsdomain="*"',
+            '--http.api="admin,eth,debug,miner,net,txpool,personal,web3"',
+            `--netrestrict=${subnet}`,
             `--bootnodes=${bootnodeEnode}`,
-            '--nat=extip:127.0.0.1',
-            '--verbosity=3'
+            `--nat=extip:${ipNode}`
         ];
     }
 
-    private getNormalCommand(bootnodeEnode: string): string[] {
+    private getNormalCommand(chainId: number, ipNode: string, subnet: string, bootnodeEnode: string): string[] {
         return [
+            `--networkid=${chainId}`,
             `--bootnodes=${bootnodeEnode}`,
-            '--nat=extip:127.0.0.1',
-            '--verbosity=3'
+            `--nat=extip:${ipNode}`,
+            `--netrestrict=${subnet}`
         ];
     }
     // creates a node account and returns the address string
@@ -107,8 +105,8 @@ export class DockerService {
                 Tty: true,
                 Entrypoint: ['geth'],
                 Cmd: [
-                    '--password', '/eth/password.txt', 
-                    '--datadir', '/eth',
+                    '--password=/eth/password.txt', 
+                    '--datadir=/eth',
                     'account', 'new' 
                 ],
                 HostConfig: {
@@ -252,9 +250,10 @@ export class DockerService {
     }
 
     async startBootnode(networkId: string, ipBootNode: string, subnet: string): Promise<string> {
-        const networkDir = path.join(this.NETWORKS_DIR, networkId);
+        const networkBootnodeDir = path.join(this.NETWORKS_DIR, networkId, 'bootnode');
+        const publicKeyPath = path.join(networkBootnodeDir, 'public.key')
         const containerName = `${networkId}-bootnode`;
-        const imageTag = `${this.GETH_IMAGE}:${this.GETH_VERSION}`;
+        const imageTag = `${this.GETH_IMAGE}:${this.GETH_ALLTOOLS_VERSION}`;
 
         try {
             //Verificar si el contenedor ya existe
@@ -271,11 +270,22 @@ export class DockerService {
             const container = await this.docker.createContainer({
                 Image: imageTag,
                 name: containerName,
-                Cmd: this.getBootnodeCommand(networkId, ipBootNode, subnet),
+                Hostname: containerName,
+                Entrypoint: ['bootnode'],
+                Cmd: this.getBootnodeCommand(ipBootNode, subnet),
                 HostConfig: {
-                    Binds: [`${networkDir}:/eth`],
+                    Binds: [`${networkBootnodeDir}:/eth`],
                     NetworkMode: networkId
-            }
+                },
+                NetworkingConfig: {
+                    EndpointsConfig: {
+                        [networkId]: {
+                            IPAMConfig: {
+                                IPv4Address: ipBootNode
+                            }
+                        }
+                    }
+                }
             });
 
             await container.start();
@@ -285,18 +295,23 @@ export class DockerService {
             await new Promise(resolve => setTimeout(resolve, 5000));
 
             // Retornar el enode URL del bootnode
-            return `enode://91db994584cf2565fa19d0f6980696f06822a8cf78c8085f95f4f7839878b1cb@${ipBootNode}:30303`;
+            const bootnodePublicKey = fs.readFileSync(publicKeyPath, 'utf8')
+
+            return `enode://${bootnodePublicKey}@${ipBootNode}:30301`;
         }catch (error) {
             throw new Error(`Failed to start bootnode: ${error.message}`);
         }
     }
 
     async startNode(
-        networkId: string, 
+        chainId: number,
+        networkId: string,
+        subnet: string, 
         node: Node, 
         bootnodeEnode: string
     ): Promise<void> {
         const networkDir = path.join(this.NETWORKS_DIR, networkId);
+        const nodeDir = path.join(networkDir, node.name)
         const containerName = `${networkId}-${node.name}`;
         const imageTag = `${this.GETH_IMAGE}:${this.GETH_VERSION}`;
 
@@ -315,13 +330,17 @@ export class DockerService {
         let cmd: string[];
         switch (node.type) {
             case 'miner':
-                cmd = this.getMinerCommand(bootnodeEnode);
+                const folderAddressPath = path.join(nodeDir, 'keystore')
+                const files = fs.readdirSync(folderAddressPath)
+                const accountFilePath = path.join(folderAddressPath, files[0])
+                const accountAddress = JSON.parse(fs.readFileSync(accountFilePath, 'utf8')).address
+                cmd = this.getMinerCommand(chainId, accountAddress, node.ip, subnet, bootnodeEnode);
                 break;
             case 'rpc':
-                cmd = this.getRpcCommand(bootnodeEnode, node.port || 8545);
+                cmd = this.getRpcCommand(chainId, node.ip, subnet, bootnodeEnode, node.port || 8545);
                 break;
             default:
-                cmd = this.getNormalCommand(bootnodeEnode);
+                cmd = this.getNormalCommand(chainId, node.ip, subnet, bootnodeEnode);
         }
 
         const container = await this.docker.createContainer({
@@ -329,7 +348,7 @@ export class DockerService {
             name: containerName,
             Cmd: cmd,
             HostConfig: {
-                Binds: [`${networkDir}:/eth`],
+                Binds: [`${nodeDir}:/root/.ethereum`],
                 NetworkMode: networkId,
                 PortBindings: node.port ? {
                     [`${node.port}/tcp`]: [{ HostPort: `${node.port}` }]
@@ -353,15 +372,22 @@ export class DockerService {
                 console.log(`No existing Docker network found: ${networkId}`);
             }
 
+            console.log(`Creating Docker network: ${networkId}`)
+
             await this.docker.createNetwork({
                 Name: networkId,
                 Driver: 'bridge',
+                CheckDuplicate: true,
+                Attachable: true,
                 IPAM: {
+                    Driver: 'default',
                     Config: [{ Subnet: subnet }],
-                    Driver: 'default'
+                },
+                Labels: {
+                    project: `${networkId} private ethnetwork`
                 }
             });
-            console.log(`Created Docker network: ${networkId}`);
+            console.log(`Created Docker network succesfully: ${networkId}`);
         } catch (error) {
             throw new Error(`Failed to create Docker network: ${error.message}`);
         }
@@ -383,7 +409,7 @@ export class DockerService {
 
             // 3. Iniciar los nodos
             for (const node of network.nodes) {
-                await this.startNode(network.id, node, network.ipBootNode);
+                await this.startNode(network.chainId, network.id, network.subnet, node, bootnodeEnode);
                 // Esperar un poco entre cada nodo para evitar problemas de inicio
                 await new Promise(resolve => setTimeout(resolve, 2000));
             }

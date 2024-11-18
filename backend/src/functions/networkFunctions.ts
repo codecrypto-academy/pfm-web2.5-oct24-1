@@ -85,18 +85,26 @@ export function listNetworks(req: Request, res: Response) {
     }
 }
 
+function validateBody(body: any): Network {
+    console.log('New network data: ', JSON.stringify(body, null, 2))
+    if(!isNetwork(body)) {
+        throw new Error('Invalid network format')
+    }
+    return body as Network
+}
+
 export async function createNetwork(req: Request, res: Response) {
     const docker = new DockerService()
     const backupFile = path.join(process.cwd(), 'data', 'networks.json.backup');
     const tempFile = path.join(process.cwd(), 'data', 'networks.json.temp');
+    const addresses: string[] = []
     let newNetwork: Network | null = null;  // Declarar fuera del try
 
     try {
         console.log('\n=== STARTING NETWORK CREATION PROCESS ===');
 
         // 1. Validar formato básico de la nueva red
-        newNetwork = req.body;  // Asignar dentro del try
-        console.log('New network data:', JSON.stringify(newNetwork, null, 2));
+        newNetwork = validateBody(req.body)
 
         // 2. Asegurarse de que el directorio data existe
         const dataDir = path.join(process.cwd(), 'data');
@@ -151,25 +159,15 @@ export async function createNetwork(req: Request, res: Response) {
         
         fs.mkdirSync(networkDir, { recursive: true });
 
-        // 6. Crear y guardar 
-        const addresses = ["123456789abcdef123456789abcdef123456789a"]
-        console.log(`Creating genesis file`);
-        const genesis = generateGenesisFile(newNetwork, addresses);
-        console.log(JSON.stringify(genesis, null, 2))
-        const genesisPath = path.join(networkDir, 'genesis.json');
-        fs.writeFileSync(genesisPath, JSON.stringify(genesis, null, 2));
-
-        //7. Crear y generar password
+        // 6. Crear y generar password
         console.log('Creating password')
         const passwordPath = path.join(networkDir, 'password.txt')
         fs.writeFileSync(passwordPath, '123456')
 
-        // 8. Inicializar bootnode
+        // 7. Inicializar bootnode
         console.log(`Initializing bootnode`);
         const bootnodeDir = path.join(networkDir, 'bootnode')
         fs.mkdirSync(bootnodeDir, { recursive: true})
-        const bootnodeGenesisPath = path.join(bootnodeDir, 'genesis.json');
-        fs.copyFileSync(genesisPath, bootnodeGenesisPath);
         const bootnodePasswordPath = path.join(bootnodeDir, 'password.txt');
         fs.copyFileSync(passwordPath, bootnodePasswordPath);
         
@@ -180,13 +178,10 @@ export async function createNetwork(req: Request, res: Response) {
             throw new Error(`Failed to initialize bootnode: ${error.message}`)
         }
 
-        // 9. Inicializar nodos
+        // 8. Crear carpetas de los nodos y cuentas de los nodos mineros
         for (const node of newNetwork.nodes) {
             const nodeDir = path.join(networkDir, node.name);
             fs.mkdirSync(nodeDir, { recursive: true });
-            
-            const nodeGenesisPath = path.join(nodeDir, 'genesis.json');
-            fs.copyFileSync(genesisPath, nodeGenesisPath);
             
             // crea una cuanta si el nodo es minero
             if (node.type == 'miner'){
@@ -198,8 +193,27 @@ export async function createNetwork(req: Request, res: Response) {
                 } catch (error) {
                     throw new Error(`Failed to create miner ${node.name} node: ${error.message}`)
                 }
-            } 
+            }
+        }
 
+        // 9. Crear y guardar el fichero genesis
+        console.log(`Creating genesis file`);
+        const genesis = generateGenesisFile(newNetwork, addresses);
+        console.log(JSON.stringify(genesis, null, 2))
+        const genesisPath = path.join(networkDir, 'genesis.json');
+        fs.writeFileSync(genesisPath, JSON.stringify(genesis, null, 2));
+
+        // 10. Copiar el fichero genesis en la carpeta del bootnode
+        const bootnodeGenesisPath = path.join(bootnodeDir, 'genesis.json');
+        fs.copyFileSync(genesisPath, bootnodeGenesisPath);
+
+        // 11. Inicializar los nodos
+        for (const node of newNetwork.nodes) {
+            const nodeDir = path.join(networkDir, node.name);
+            // copia el fichero genesis en la carpeta de los nodos
+            const nodeGenesisPath = path.join(nodeDir, 'genesis.json');
+            fs.copyFileSync(genesisPath, nodeGenesisPath);
+            // inicializa los nodos
             try {
                 console.log(`Initializing genesis block in ${node.name}`)
                 await docker.initializeGenesisBlock(newNetwork.id, node.name)
@@ -208,9 +222,7 @@ export async function createNetwork(req: Request, res: Response) {
             }
         }
 
-        console.log(addresses)
-
-        // 9. Actualizar networks.json de manera segura
+        // 10. Actualizar networks.json de manera segura
         try {
             console.log('Updating networks.json...');
             // Agregar la nueva red al array
