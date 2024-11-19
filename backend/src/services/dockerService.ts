@@ -1,8 +1,9 @@
-import Docker from 'dockerode';
+import Docker, { Config } from 'dockerode';
 import fs from 'fs';
 import path from 'path';
 import { Node } from '../types/node';
 import { Network } from '../types/network';
+import { CommandBuilder } from './CommandBuilder';
 
 export class DockerService {
     private docker: Docker;
@@ -39,65 +40,57 @@ export class DockerService {
         }
     }
 
-    private getBootnodeCommand(ipBootNode: string, subnet: string): string[] {
-        return [
-            `-addr=${ipBootNode}:30301`,
-            '-nodekey=/eth/boot.key',
-            `-netrestrict=${subnet}`,
-        ]
-    }
+    private async removeExistingContainer(containerName: string): Promise<void> {
+        const existingContainer = this.docker.getContainer(containerName);
+        try {
+            console.log(`Checking if ${containerName} already exists`)
+            const containerInfo = await existingContainer.inspect()
+            const currentContainerState = containerInfo.State.Status
+            console.log(`Status of the container ${containerName}: ${currentContainerState}`)
+            switch (currentContainerState) {
+                case 'restarting':
+                case 'running':
+                    console.log(`Stopping container: ${containerName}...`)
+                    await existingContainer.stop();
+                    break
+            
+                case 'paused':
+                    console.log(`Unpausing container: ${containerName}...`)
+                    await existingContainer.unpause()
+                    console.log(`Stopping container: ${containerName}...`)
+                    await existingContainer.stop()
+                    break
 
-    private getMinerCommand(chainId: number, accountAddress: string, ipNode: string, subnet: string, bootnodeEnode: string): string[] {
-        return [
-            `--networkid=${chainId}`,
-            '--mine',
-            `--miner.etherbase=0x${accountAddress}`,
-            `--bootnodes=${bootnodeEnode}`,
-            `--nat=extip:${ipNode}`,
-            `--netrestrict=${subnet}`,
-            `--unlock=${accountAddress}`,
-            `--password=/root/.ethereum/password.txt` 
-        ];
-    }
+                case 'created':
+                case 'exited':
+                case 'dead':
+                    console.log(`Container is already stopped: ${containerName}`)
+                    break
 
-    private getRpcCommand(chainId: number, ipNode: string, subnet: string, bootnodeEnode: string, nodePort: number): string[] {
-        return [
-            `--networkid=${chainId}`,
-            '--http',
-            '--http.addr=0.0.0.0',
-            `--http.port=${nodePort}`,
-            '--http.corsdomain="*"',
-            '--http.api="admin,eth,debug,miner,net,txpool,personal,web3"',
-            `--netrestrict=${subnet}`,
-            `--bootnodes=${bootnodeEnode}`,
-            `--nat=extip:${ipNode}`
-        ];
+                default:
+                    console.log(`Unkown container state: ${containerName}`)
+            }
+            console.log(`Removing container: ${containerName}`)
+            await existingContainer.remove({ force: true })
+            console.log(`Container has been removed successfully: ${containerName}`)
+        } catch (error) {
+            if(error.statusCode === 404){
+                console.log(`Container ${containerName} not found`)
+            } else{
+                console.log(`Error removing container: ${containerName} : ${error.message}`)
+            }
+        }
     }
+    
 
-    private getNormalCommand(chainId: number, ipNode: string, subnet: string, bootnodeEnode: string): string[] {
-        return [
-            `--networkid=${chainId}`,
-            `--bootnodes=${bootnodeEnode}`,
-            `--nat=extip:${ipNode}`,
-            `--netrestrict=${subnet}`
-        ];
-    }
     // creates a node account and returns the address string
     async createNodeAccount(networkId: string, nodeName: string): Promise<string>{
         const nodeDir = path.join(this.NETWORKS_DIR, networkId, nodeName)
-        const containerName = `${networkId}-${nodeName}`
+        const containerName = `${networkId}-${nodeName}-init`
         const imageTag = `${this.GETH_IMAGE}:${this.GETH_VERSION}`
         try {
             //Verificar si el contenedor ya existe
-            const existingContainer = this.docker.getContainer(containerName)
-            try {
-                await existingContainer.stop();
-                await existingContainer.remove( { force: true });
-                console.log(`Removed existing ${nodeName} container: ${containerName}`)
-            }
-            catch (error) {
-                console.log(`No existing ${nodeName} container found: ${containerName}`)
-            }
+            await this.removeExistingContainer(containerName)
 
             const container = await this.docker.createContainer({
                 Image: imageTag,
@@ -151,15 +144,7 @@ export class DockerService {
         
         try {
              //Verificar si el contenedor ya existe
-             const existingContainer = this.docker.getContainer(containerName)
-             try {
-                 await existingContainer.stop();
-                 await existingContainer.remove( { force: true });
-                 console.log(`Removed existing ${nodeName} container: ${containerName}`)
-             }
-             catch (error) {
-                 console.log(`No existing ${nodeName} container found: ${containerName}`)
-             }
+             await this.removeExistingContainer(containerName)
              
             // Create and start the container with the Geth init command
             const container = await this.docker.createContainer({
@@ -194,15 +179,8 @@ export class DockerService {
         const imageTag = `${this.GETH_IMAGE}:${this.GETH_ALLTOOLS_VERSION}`
         try {
             //Verificar si el contenedor ya existe
-            const existingContainer = this.docker.getContainer(containerName)
-            try {
-                await existingContainer.stop();
-                await existingContainer.remove( { force: true });
-                console.log(`Removed existing bootnode container: ${containerName}`)
-            }
-            catch (error) {
-                console.log(`No existing bootnode container found: ${containerName}`)
-            }
+            await this.removeExistingContainer(containerName)
+
             // Crea un contenedor para inicializar las llaves del bootnode
             const container = await this.docker.createContainer({
                 Image: imageTag,
@@ -250,31 +228,23 @@ export class DockerService {
     }
 
     async startBootnode(networkId: string, ipBootNode: string, subnet: string): Promise<string> {
-        const networkBootnodeDir = path.join(this.NETWORKS_DIR, networkId, 'bootnode');
-        const publicKeyPath = path.join(networkBootnodeDir, 'public.key')
+        const bootnodeDir = path.join(this.NETWORKS_DIR, networkId, 'bootnode');
         const containerName = `${networkId}-bootnode`;
+        const publicKeyPath = path.join(bootnodeDir, 'public.key')
         const imageTag = `${this.GETH_IMAGE}:${this.GETH_ALLTOOLS_VERSION}`;
 
         try {
             //Verificar si el contenedor ya existe
-            const existingContainer = this.docker.getContainer(containerName);
-            try {
-                await existingContainer.stop();
-                await existingContainer.remove( { force: true });
-                console.log(`Removed existing bootnode container: ${containerName}`);
-            }
-            catch (error) {
-                console.log(`No existing bootnode container found: ${containerName}`);
-            }
+            await this.removeExistingContainer(containerName);
 
             const container = await this.docker.createContainer({
                 Image: imageTag,
                 name: containerName,
                 Hostname: containerName,
                 Entrypoint: ['bootnode'],
-                Cmd: this.getBootnodeCommand(ipBootNode, subnet),
+                Cmd: CommandBuilder.getCommand('bootnode', { ipBootNode, subnet }),
                 HostConfig: {
-                    Binds: [`${networkBootnodeDir}:/eth`],
+                    Binds: [`${bootnodeDir}:/eth`],
                     NetworkMode: networkId
                 },
                 NetworkingConfig: {
@@ -296,63 +266,76 @@ export class DockerService {
 
             // Retornar el enode URL del bootnode
             const bootnodePublicKey = fs.readFileSync(publicKeyPath, 'utf8')
-
             return `enode://${bootnodePublicKey}@${ipBootNode}:30301`;
         }catch (error) {
             throw new Error(`Failed to start bootnode: ${error.message}`);
         }
     }
 
-    async startNode(
+    private getNodeAddress(nodeDir: string): string {
+        try {
+            const folderAddressPath = path.join(nodeDir, 'keystore')
+            const files = fs.readdirSync(folderAddressPath)
+            const addressFilePath = path.join(folderAddressPath, files[0])
+            const addressNode = JSON.parse(fs.readFileSync(addressFilePath, 'utf8')).address    
+            return addressNode
+        } catch (error) {
+            throw new Error(`Error reading the node address: ${error.message}`)
+        }
+    } 
+
+    async startNode( params: {
+        node: Node, 
         chainId: number,
         networkId: string,
         subnet: string, 
-        node: Node, 
         bootnodeEnode: string
+    }
     ): Promise<void> {
+        const {node, chainId, networkId, subnet, bootnodeEnode } = params
+        
         const networkDir = path.join(this.NETWORKS_DIR, networkId);
         const nodeDir = path.join(networkDir, node.name)
+        
         const containerName = `${networkId}-${node.name}`;
         const imageTag = `${this.GETH_IMAGE}:${this.GETH_VERSION}`;
 
         try {
             //Verificar si el contenedor ya existe
-            const existingContainer = this.docker.getContainer(containerName);
-            try {
-                await existingContainer.stop();
-                await existingContainer.remove( { force: true });
-                console.log(`Removed existing ${node.type} node container: ${containerName}`);
-            }
-            catch (error) {
-                console.log(`No existing ${node.type} node container found: ${containerName}`);
-            }
+            await this.removeExistingContainer(containerName);
         
-        let cmd: string[];
-        switch (node.type) {
-            case 'miner':
-                const folderAddressPath = path.join(nodeDir, 'keystore')
-                const files = fs.readdirSync(folderAddressPath)
-                const accountFilePath = path.join(folderAddressPath, files[0])
-                const accountAddress = JSON.parse(fs.readFileSync(accountFilePath, 'utf8')).address
-                cmd = this.getMinerCommand(chainId, accountAddress, node.ip, subnet, bootnodeEnode);
-                break;
-            case 'rpc':
-                cmd = this.getRpcCommand(chainId, node.ip, subnet, bootnodeEnode, node.port || 8545);
-                break;
-            default:
-                cmd = this.getNormalCommand(chainId, node.ip, subnet, bootnodeEnode);
-        }
-
+        let cmd = CommandBuilder.getCommand(
+            node.type, { 
+                chainId, 
+                ipNode: node.ip, 
+                subnet, bootnodeEnode, 
+                portNode: node.port, 
+                addressNode: node.type === 'miner' ? this.getNodeAddress(nodeDir) : undefined 
+            })
+        
         const container = await this.docker.createContainer({
             Image: imageTag,
             name: containerName,
+            Entrypoint: ['geth'], 
             Cmd: cmd,
+            ExposedPorts: node.port ? {  
+                [`${node.port}/tcp`]: {}
+            } : undefined,
             HostConfig: {
                 Binds: [`${nodeDir}:/root/.ethereum`],
                 NetworkMode: networkId,
                 PortBindings: node.port ? {
                     [`${node.port}/tcp`]: [{ HostPort: `${node.port}` }]
                 } : undefined
+            },
+            NetworkingConfig: {
+                EndpointsConfig: {
+                    [networkId]: {
+                        IPAMConfig: {
+                            IPv4Address: node.ip
+                        }
+                    }
+                }
             }
         });
 
@@ -365,8 +348,8 @@ export class DockerService {
     async createDockerNetwork(networkId: string, subnet: string): Promise<void> {
         try {
             try {
-                const Network = await this.docker.getNetwork(networkId);
-                await Network.remove();
+                const network = await this.docker.getNetwork(networkId);
+                await network.remove()
                 console.log(`Removed existing Docker network: ${networkId}`);
             } catch (error) {
                 console.log(`No existing Docker network found: ${networkId}`);
@@ -387,7 +370,6 @@ export class DockerService {
                     project: `${networkId} private ethnetwork`
                 }
             });
-            console.log(`Created Docker network succesfully: ${networkId}`);
         } catch (error) {
             throw new Error(`Failed to create Docker network: ${error.message}`);
         }
@@ -409,7 +391,7 @@ export class DockerService {
 
             // 3. Iniciar los nodos
             for (const node of network.nodes) {
-                await this.startNode(network.chainId, network.id, network.subnet, node, bootnodeEnode);
+                await this.startNode({node, chainId: network.chainId, networkId: network.id, subnet: network.subnet, bootnodeEnode});
                 // Esperar un poco entre cada nodo para evitar problemas de inicio
                 await new Promise(resolve => setTimeout(resolve, 2000));
             }
@@ -419,4 +401,49 @@ export class DockerService {
             throw new Error(`Failed to start network: ${error.message}`);
         }
     }
+
+    
+    // private getBootnodeCommand(ipBootNode: string, subnet: string): string[] {
+    //     return [
+    //         `-addr=${ipBootNode}:30301`,
+    //         '-nodekey=/eth/boot.key',
+    //         `-netrestrict=${subnet}`,
+    //     ]
+    // }
+
+    // private getMinerCommand(chainId: number, accountAddress: string, ipNode: string, subnet: string, bootnodeEnode: string): string[] {
+    //     return [
+    //         `--networkid=${chainId}`,
+    //         '--mine',
+    //         `--miner.etherbase=0x${accountAddress}`,
+    //         `--bootnodes=${bootnodeEnode}`,
+    //         `--nat=extip:${ipNode}`,
+    //         `--netrestrict=${subnet}`,
+    //         `--unlock=${accountAddress}`,
+    //         `--password=/root/.ethereum/password.txt` 
+    //     ];
+    // }
+
+    // private getRpcCommand(chainId: number, ipNode: string, subnet: string, bootnodeEnode: string, portNode: number): string[] {
+    //     return [
+    //         `--networkid=${chainId}`,
+    //         '--http',
+    //         '--http.addr=0.0.0.0',
+    //         `--http.port=${portNode}`,
+    //         '--http.corsdomain="*"',
+    //         '--http.api="admin,eth,debug,miner,net,txpool,personal,web3"',
+    //         `--netrestrict=${subnet}`,
+    //         `--bootnodes=${bootnodeEnode}`,
+    //         `--nat=extip:${ipNode}`
+    //     ];
+    // }
+
+    // private getNormalCommand(chainId: number, ipNode: string, subnet: string, bootnodeEnode: string): string[] {
+    //     return [
+    //         `--networkid=${chainId}`,
+    //         `--bootnodes=${bootnodeEnode}`,
+    //         `--nat=extip:${ipNode}`,
+    //         `--netrestrict=${subnet}`
+    //     ];
+    // }
 }

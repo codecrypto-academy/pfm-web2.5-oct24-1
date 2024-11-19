@@ -4,7 +4,7 @@ import { isNetworkArray, validateNetwork, isNetwork } from '../validations/netwo
 import { GenesisFile, GenesisConfig } from '../types/genesis';
 import fs from 'fs';
 import path, { join } from 'path';
-import { DockerService } from '../services/dockerService';
+import { DockerService } from '../services/DockerService';
 
 const GETH_VERSION = 'v1.13.15';
 
