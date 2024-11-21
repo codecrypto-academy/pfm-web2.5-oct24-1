@@ -172,8 +172,7 @@ export async function createNetwork(req: Request, res: Response) {
         fs.copyFileSync(passwordPath, bootnodePasswordPath);
         
         try {
-            const address = await docker.initializeBootnode(newNetwork.id)
-            addresses.push(address) 
+            await docker.initializeBootnode(newNetwork.id)
         } catch (error) {
             throw new Error(`Failed to initialize bootnode: ${error.message}`)
         }

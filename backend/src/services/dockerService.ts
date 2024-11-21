@@ -216,12 +216,11 @@ export class DockerService {
         }
     }
 
-    async initializeBootnode(networkId: string): Promise<string>{
+    async initializeBootnode(networkId: string): Promise<void> {
         try {
-            const address = await this.createNodeAccount(networkId, 'bootnode')
+            await this.createNodeAccount(networkId, 'bootnode')
             await this.initializeBootnodeKeys(networkId)
             console.log('Bootnode initialized successfully')
-            return address 
         } catch (error) {
             throw new Error(`Error initializing bootnode: ${error.message}`)
         }
@@ -401,49 +400,4 @@ export class DockerService {
             throw new Error(`Failed to start network: ${error.message}`);
         }
     }
-
-    
-    // private getBootnodeCommand(ipBootNode: string, subnet: string): string[] {
-    //     return [
-    //         `-addr=${ipBootNode}:30301`,
-    //         '-nodekey=/eth/boot.key',
-    //         `-netrestrict=${subnet}`,
-    //     ]
-    // }
-
-    // private getMinerCommand(chainId: number, accountAddress: string, ipNode: string, subnet: string, bootnodeEnode: string): string[] {
-    //     return [
-    //         `--networkid=${chainId}`,
-    //         '--mine',
-    //         `--miner.etherbase=0x${accountAddress}`,
-    //         `--bootnodes=${bootnodeEnode}`,
-    //         `--nat=extip:${ipNode}`,
-    //         `--netrestrict=${subnet}`,
-    //         `--unlock=${accountAddress}`,
-    //         `--password=/root/.ethereum/password.txt` 
-    //     ];
-    // }
-
-    // private getRpcCommand(chainId: number, ipNode: string, subnet: string, bootnodeEnode: string, portNode: number): string[] {
-    //     return [
-    //         `--networkid=${chainId}`,
-    //         '--http',
-    //         '--http.addr=0.0.0.0',
-    //         `--http.port=${portNode}`,
-    //         '--http.corsdomain="*"',
-    //         '--http.api="admin,eth,debug,miner,net,txpool,personal,web3"',
-    //         `--netrestrict=${subnet}`,
-    //         `--bootnodes=${bootnodeEnode}`,
-    //         `--nat=extip:${ipNode}`
-    //     ];
-    // }
-
-    // private getNormalCommand(chainId: number, ipNode: string, subnet: string, bootnodeEnode: string): string[] {
-    //     return [
-    //         `--networkid=${chainId}`,
-    //         `--bootnodes=${bootnodeEnode}`,
-    //         `--nat=extip:${ipNode}`,
-    //         `--netrestrict=${subnet}`
-    //     ];
-    // }
 }
