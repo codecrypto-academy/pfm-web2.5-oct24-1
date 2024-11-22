@@ -4,7 +4,8 @@ import { isNetworkArray, validateNetwork, isNetwork } from '../validations/netwo
 import { GenesisFile, GenesisConfig } from '../types/genesis';
 import fs from 'fs';
 import path, { join } from 'path';
-import { DockerService } from '../services/DockerService';
+import { DockerService } from '../services/dockerService'
+import { generateGenesisFile } from '../services/genesisGenerator';
 
 const GETH_VERSION = 'v1.13.15';
 
@@ -16,58 +17,6 @@ const NETWORKS_FILE = path.join(BASE_DIR, 'data', 'networks.json');
 // El directorio networks existe
 if (!fs.existsSync(NETWORKS_DIR)) {
     fs.mkdirSync(NETWORKS_DIR, { recursive: true });
-}
-
-function generateExtradata(addresses: string[]): string{
-    // validate addresses
-    const addressRegex = /^[a-fA-F0-9]{40}$/ // Regex to match a 40-character hexadecimal string
-    for (let address of addresses) {
-        console.log(address)
-        if (!addressRegex.test(address)) {
-            throw new Error('one of the addresses is not a 40-character hexadecimal string')
-        }
-    }
-
-    const zerosFront = "00".repeat(32) //32-bytes of zeroes
-    const zerosBack = "00".repeat(65) // 65-bytes of zeroes
-    const joinedAddresses = addresses.join('')
-    const extradata = '0x' + zerosFront + joinedAddresses + zerosBack
-    
-    return extradata       
-}
-
-function generateGenesisFile(network: Network, addresses: string[]): GenesisFile {
-    const config: GenesisConfig = {
-        chainId: network.chainId,
-        homesteadBlock: 0,
-        eip150Block: 0,
-        eip155Block: 0,
-        eip158Block: 0,
-        byzantiumBlock: 0,
-        constantinopleBlock: 0,
-        petersburgBlock: 0,
-        clique: {
-            "period": 15,
-            "epoch": 30000
-        }
-    };
-
-    const alloc: { [key: string]: { balance: string } } = {};
-    network.alloc.forEach(allocation => {
-        const balanceInWei = BigInt(allocation.value) * BigInt(10**18);
-        alloc[allocation.address] = {
-            balance: balanceInWei.toString()
-        };
-    });
-
-    const extradata = generateExtradata(addresses)
-    return {
-        config,
-        difficulty: "1",
-        gasLimit: "8000000",
-        extradata,
-        alloc
-    };
 }
 
 export function listNetworks(req: Request, res: Response) {
@@ -172,7 +121,8 @@ export async function createNetwork(req: Request, res: Response) {
         fs.copyFileSync(passwordPath, bootnodePasswordPath);
         
         try {
-            await docker.initializeBootnode(newNetwork.id)
+            const faucetAddress = await docker.initializeBootnode(newNetwork.id)
+            addresses.push(faucetAddress)
         } catch (error) {
             throw new Error(`Failed to initialize bootnode: ${error.message}`)
         }
@@ -356,7 +306,7 @@ export function deleteNetwork(req: Request, res: Response) {
         // Encontrar la red por su ID
         const networkIndex = networks.findIndex(net => net.id === networkId);
         if (networkIndex === -1) {
-            return res.status(404).json({ message: 'Red no encontrada' });
+            return res.status(404).json({ message: 'Network not found' });
         }
 
         // Eliminar la red del array
@@ -370,10 +320,10 @@ export function deleteNetwork(req: Request, res: Response) {
         if (fs.existsSync(networkDir)) {
             fs.rmSync(networkDir, { recursive: true, force: true });
         }
-
-        res.status(200).json({ message: 'Red eliminada correctamente', network: deletedNetwork });
+        console.log('Network successfully deleted')
+        res.status(200).json({ message: 'Network successfully deleted', network: deletedNetwork });
     } catch (error) {
-        console.error('Error al eliminar la red:', error);
-        res.status(500).json({ message: 'Error al eliminar la red', error: error.message });
+        console.error(`Error deleting the network: ${networkId}`, error);
+        res.status(500).json({ message: 'Error deleting the network ', error: error.message });
     }
 }
