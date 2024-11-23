@@ -2,6 +2,7 @@ import Web3 from 'web3';
 import fs from 'fs';
 import path, { join } from 'path';
 import { Request, Response } from 'express';
+import { isAddress } from 'web3-validator';
 
 const BASE_DIR = path.join(process.cwd());
 const NETWORKS_FILE = path.join(BASE_DIR, 'data', 'networks.json');
@@ -88,6 +89,40 @@ export async function getTransaction(req: Request, res: Response) {
         }
     }
 }
+
+export async function getBalance(req: Request, res: Response){
+    const web3 = await connectProvider(req.params.id);
+    
+    if (web3 === null) {
+        res.status(500).send('Error al conectar con el provider web3 en la función getAddress');
+        return;
+    }
+
+    try {
+        // Obtener la dirección de la cartera desde los parámetros de la solicitud
+        const walletAddress = req.params.address;
+
+        // Validar que la dirección es válida usando web3-validator
+        if (!isAddress(walletAddress)) {
+            res.status(400).send('Dirección de la cartera no válida');
+            return;
+        }
+
+        // Obtener el balance de la dirección
+        const balance = await web3.eth.getBalance(walletAddress);
+
+        // Convertir el saldo de Wei a Ether
+        const balanceInEther = web3.utils.fromWei(balance, 'ether');
+
+        // Devolver la información de la dirección y el balance
+        console.log("Balance obtenido de forma exitosa");
+        res.send({ address: walletAddress, balance: balanceInEther });
+    } catch (error) {
+        console.error('Error al obtener la información de la dirección:', error);
+        res.status(500).send('Error al obtener la información de la dirección');
+    }
+}
+
 
 /* PRIVATES HELPER FUNCTIONS  */
 async function connectProvider(networkId:string): Promise<Web3 | null>{
