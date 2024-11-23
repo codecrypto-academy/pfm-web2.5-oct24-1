@@ -61,6 +61,34 @@ export async function getBlock(req: Request, res: Response){
   
 }
 
+export async function getTransaction(req: Request, res: Response) {
+    const web3 = await connectProvider(req.params.id);
+    if (web3 === null) {
+        res.status(500).send('Error al conectar con el provider web3 en funcion getTransaction');
+    } else {
+        try {
+            // Obtener el hash de la transacción desde los parámetros de la solicitud
+            const transaction = await web3.eth.getTransaction(req.params.txId); // Obtener información de la transacción
+            
+            // Si la transacción no existe, retornar un error
+            if (!transaction) {
+                res.status(404).send('Transacción no encontrada');
+                return;
+            }
+
+            // Serializar la transacción, manejando BigInt
+            const replacer = (key: string, value: any) =>
+                typeof value === 'bigint' ? value.toString() : value;
+            
+            console.log('Transacción obtenida de forma exitosa');
+            res.send(JSON.stringify(transaction, replacer)); // Enviar la transacción como respuesta
+        } catch (error) {
+            console.error('Error al obtener la transacción:', error);
+            res.status(500).send('Error al obtener la transacción de la red');
+        }
+    }
+}
+
 /* PRIVATES HELPER FUNCTIONS  */
 async function connectProvider(networkId:string): Promise<Web3 | null>{
     try {

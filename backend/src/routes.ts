@@ -1,6 +1,6 @@
 import express, { Request, Response, Router } from 'express';
 import { networkDetails, createNetwork, listNetworks, startNetwork, deleteNetwork } from './functions/networkFunctions';
-import { getLastBlocks, getBlock} from  './functions/explorerFunctions';
+import { getLastBlocks, getBlock, getTransaction} from  './functions/explorerFunctions';
 
 const router: Router = express.Router();
 
@@ -14,6 +14,7 @@ router.delete('/network/:id', (req: Request, res: Response) => { deleteNetwork(r
 //Explorer routes
 router.get('/network/:id/explorer/blocks', (req: Request, res: Response) =>{getLastBlocks(req, res)});
 router.get('/network/:id/explorer/block/:blockId', (req: Request, res: Response) =>{getBlock(req, res)});
+router.get('/network/:id/explorer/transaction/:txId', (req: Request, res: Response) =>{getTransaction(req, res)});
 //TODO router.post('/network/:id/stop', (req: Request, res: Response) => { stopNetwork(req, res) });
 
 // //Node endpoints
