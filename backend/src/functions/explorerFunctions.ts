@@ -6,33 +6,59 @@ import { Request, Response } from 'express';
 const BASE_DIR = path.join(process.cwd());
 const NETWORKS_FILE = path.join(BASE_DIR, 'data', 'networks.json');
 
-/*Main routes functions */
+/*MAIN ROUTES FUNCTIONS*/
 export async function getLastBlocks(req: Request, res: Response){
     const web3 = await connectProvider(req.params.id);
-    try {
-        const { count } = req.query; 
-        // Número de bloques que se desea obtener, por defecto 10
-        // Conversion de count a numero bigint para hacer la solucion mas robusta
-        const blockCount = BigInt(parseInt(count as string, 10) || 10);
-
-        const latestBlockNumber = await web3.eth.getBlockNumber(); // Número del bloque más reciente
-
-        // Obtener los últimos bloques
-        const blocks = [];
-        for (let i = latestBlockNumber; i > latestBlockNumber - blockCount && i >= BigInt(0); i--) {
-            const block = await web3.eth.getBlock(i);
-            blocks.push(block);
+    if(web3 === null){
+        res.status(500).send('Error al conectar con el provider web3 en funcion getLastBlocks');
+    }else{
+        try {
+            const { count } = req.query; 
+            // Número de bloques que se desea obtener, por defecto 10
+            // Conversion de count a numero bigint para hacer la solucion mas robusta
+            const blockCount = BigInt(parseInt(count as string, 10) || 10);
+    
+            const latestBlockNumber = await web3.eth.getBlockNumber(); // Número del bloque más reciente
+    
+            // Obtener los últimos bloques
+            const blocks = [];
+            for (let i = latestBlockNumber; i > latestBlockNumber - blockCount && i >= BigInt(0); i--) {
+                const block = await web3.eth.getBlock(i);
+                blocks.push(block);
+            }
+    
+            // Serializar y enviar los bloques, manejando BigInt
+            const replacer = (key: string, value: any) =>
+                typeof value === 'bigint' ? value.toString() : value;
+            console.log('Obtenidos los bloques de forma exitosa');
+            res.send(JSON.stringify(blocks, replacer));
+        } catch (error) {
+            console.error('Error al obtener los bloques:', error);
+            res.status(500).send('Error al obtener los bloques de la red');
         }
-
-        // Serializar y enviar los bloques, manejando BigInt
-        const replacer = (key: string, value: any) =>
-            typeof value === 'bigint' ? value.toString() : value;
-        console.log('Obtenidos los bloques de forma exitosa');
-        res.send(JSON.stringify(blocks, replacer));
-    } catch (error) {
-        console.error('Error al obtener los bloques:', error);
-        res.status(500).send('Error al obtener los bloques de la red');
     }
+    
+}
+
+export async function getBlock(req: Request, res: Response){
+    const web3 = await connectProvider(req.params.id);
+
+    if(web3 === null){
+        res.status(500).send('Error al conectar con el provider web3 en funcion getBlock');
+    }else{
+        try {
+            // Obtiene la información del bloque especificado y sus transacciones
+            const block = await web3.eth.getBlock(req.params.blockId, true); // 'true' asegura que también se incluyen las transacciones
+            const replacer = (key: string, value: any) =>
+                typeof value === 'bigint' ? value.toString() : value;
+            console.log('Obtenido el bloque con sus transacciones de forma exitosa');
+            res.send(JSON.stringify(block,replacer)); // Devuelve el bloque con sus transacciones
+        } catch (error) {
+            console.error('Error al obtener el bloque:', error); // Muestra el error en consola
+            res.status(500).send('Error al obtener el bloque con sus transacciones');
+        }
+    }
+  
 }
 
 /* PRIVATES HELPER FUNCTIONS  */
