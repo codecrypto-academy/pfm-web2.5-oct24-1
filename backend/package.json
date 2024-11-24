@@ -16,6 +16,7 @@
     "@types/dockerode": "^3.3.31",
     "cors": "^2.8.5",
     "dockerode": "^4.0.2",
+    "ethers": "^6.13.4",
     "express": "^4.21.1"
   },
   "devDependencies": {

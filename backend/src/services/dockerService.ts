@@ -285,7 +285,7 @@ export class DockerService {
         }
     }
 
-    private getNodeAddress(nodeDir: string): string {
+    private static getNodeAddress(nodeDir: string): string {
         try {
             const folderAddressPath = path.join(nodeDir, 'keystore')
             const files = fs.readdirSync(folderAddressPath)
@@ -323,7 +323,7 @@ export class DockerService {
                 ipNode: node.ip, 
                 subnet, bootnodeEnode, 
                 portNode: node.port, 
-                addressNode: node.type === 'miner' ? this.getNodeAddress(nodeDir) : undefined 
+                addressNode: node.type === 'miner' ? DockerService.getNodeAddress(nodeDir) : undefined 
             })
         
         const container = await this.docker.createContainer({

@@ -1,13 +1,10 @@
-import { Network } from '../types/network';
-import { Request, Response } from 'express';
-import { isNetworkArray, validateNetwork, isNetwork } from '../validations/networkValidations';
-import { GenesisFile, GenesisConfig } from '../types/genesis';
-import fs from 'fs';
-import path, { join } from 'path';
+import { Request, Response } from 'express'
+import fs from 'fs'
+import path from 'path'
+import { isNetworkArray, validateNetwork, isNetwork } from '../validations/networkValidations'
+import { Network } from '../types/network'
 import { DockerService } from '../services/dockerService'
-import { generateGenesisFile } from '../services/genesisGenerator';
-
-const GETH_VERSION = 'v1.13.15';
+import { generateGenesisFile } from '../services/genesisGenerator'
 
 // Definir rutas base
 const BASE_DIR = path.join(process.cwd());
@@ -44,8 +41,8 @@ function validateBody(body: any): Network {
 
 export async function createNetwork(req: Request, res: Response) {
     const docker = new DockerService()
-    const backupFile = path.join(process.cwd(), 'data', 'networks.json.backup');
-    const tempFile = path.join(process.cwd(), 'data', 'networks.json.temp');
+    const backupFile = path.join(BASE_DIR, 'data', 'networks.json.backup');
+    const tempFile = path.join(BASE_DIR, 'data', 'networks.json.temp');
     const addresses: string[] = []
     let newNetwork: Network | null = null;  // Declarar fuera del try
 
@@ -56,7 +53,7 @@ export async function createNetwork(req: Request, res: Response) {
         newNetwork = validateBody(req.body)
 
         // 2. Asegurarse de que el directorio data existe
-        const dataDir = path.join(process.cwd(), 'data');
+        const dataDir = path.join(BASE_DIR, 'data');
         if (!fs.existsSync(dataDir)) {
             fs.mkdirSync(dataDir, { recursive: true });
         }

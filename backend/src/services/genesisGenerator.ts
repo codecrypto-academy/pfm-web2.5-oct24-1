@@ -18,7 +18,7 @@ function generateExtradata(addresses: string[]): string {
 
 function generateAlloc(faucetAddress: string, allocs: Alloc[]) {
     const allocations: { [key: string]: {balance: string}} = {}
-    allocations[faucetAddress] = {balance: "100000000000000"}
+    allocations[faucetAddress] = {balance: "10000000000000000000000000000"}
     allocs.forEach((alloc) => {
         const balanceInWei = BigInt(alloc.value) * BigInt(10 ** 18)
         allocations[alloc.address] = { balance: balanceInWei.toString() }

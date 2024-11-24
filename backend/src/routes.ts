@@ -1,5 +1,6 @@
 import express, { Request, Response, Router } from 'express'
 import { networkDetails, createNetwork, listNetworks, startNetwork, deleteNetwork } from './functions/networkFunctions'
+import { getTokens } from './functions/faucetFunctions'
 
 const router: Router = express.Router();
 
@@ -14,5 +15,8 @@ router.delete('/network/:id', (req: Request, res: Response) => { deleteNetwork(r
 // //Node endpoints
 //TODO router.post('/node/:networkid', (req: Request, res: Response) => { addNode(req, res) });
 //TODO router.delete('/node/:id', (req: Request, res: Response) => { deleteNode(req, res) });
+
+// Faucet endpoint
+router.get('/faucet/:networkId/:address', (req: Request, res: Response) => { getTokens(req, res) })
 
 export default router;
