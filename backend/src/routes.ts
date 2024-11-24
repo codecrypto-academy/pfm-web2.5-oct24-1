@@ -1,5 +1,5 @@
 import express, { Request, Response, Router } from 'express'
-import { networkDetails, createNetwork, listNetworks, startNetwork, deleteNetwork } from './functions/networkFunctions'
+import { networkDetails, createNetwork, listNetworks, startNetwork, deleteNetwork, addNodeToNetwork } from './functions/networkFunctions'
 
 const router: Router = express.Router();
 
@@ -9,10 +9,10 @@ router.get('/network/:id', (req: Request, res: Response) => { networkDetails(req
 router.post('/network', (req: Request, res: Response) => { createNetwork(req, res) });
 router.post('/network/:id/start', (req: Request, res: Response) => { startNetwork(req, res) });
 router.delete('/network/:id', (req: Request, res: Response) => { deleteNetwork(req, res) });
+router.post('/network/:id/node', (req: Request, res: Response) => { addNodeToNetwork(req, res) });
 //TODO router.post('/network/:id/stop', (req: Request, res: Response) => { stopNetwork(req, res) });
 
 // //Node endpoints
-//TODO router.post('/node/:networkid', (req: Request, res: Response) => { addNode(req, res) });
 //TODO router.delete('/node/:id', (req: Request, res: Response) => { deleteNode(req, res) });
 
 export default router;

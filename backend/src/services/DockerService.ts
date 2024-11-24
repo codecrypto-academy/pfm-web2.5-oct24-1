@@ -22,25 +22,25 @@ export class DockerService {
         console.log(`Pulling Geth ${this.GETH_IMAGE} ${this.GETH_VERSION}...`);
         try {
             await new Promise((resolve, reject) => {
-            this.docker.pull(imageTag, (error:any, stream: any) => {
-                if (error) {
-                    return reject(error);
-                }
-                this.docker.modem.followProgress(stream, (error:any, output:any) => {
+                this.docker.pull(imageTag, (error: any, stream: any) => {
                     if (error) {
                         return reject(error);
                     }
-                    resolve(output);
+                    this.docker.modem.followProgress(stream, (error: any, output: any) => {
+                        if (error) {
+                            return reject(error);
+                        }
+                        resolve(output);
+                    });
                 });
             });
-        });
 
         } catch (error) {
             throw new Error(`Failed to pull Geth image: ${error.message}`);
         }
     }
 
-    private async removeExistingContainer(containerName: string): Promise<void> {
+    public async removeExistingContainer(containerName: string): Promise<void> {
         const existingContainer = this.docker.getContainer(containerName);
         try {
             console.log(`Checking if ${containerName} already exists`)
@@ -53,7 +53,7 @@ export class DockerService {
                     console.log(`Stopping container: ${containerName}...`)
                     await existingContainer.stop();
                     break
-            
+
                 case 'paused':
                     console.log(`Unpausing container: ${containerName}...`)
                     await existingContainer.unpause()
@@ -74,17 +74,17 @@ export class DockerService {
             await existingContainer.remove({ force: true })
             console.log(`Container has been removed successfully: ${containerName}`)
         } catch (error) {
-            if(error.statusCode === 404){
+            if (error.statusCode === 404) {
                 console.log(`Container ${containerName} not found`)
-            } else{
+            } else {
                 console.log(`Error removing container: ${containerName} : ${error.message}`)
             }
         }
     }
-    
+
 
     // creates a node account and returns the address string
-    async createNodeAccount(networkId: string, nodeName: string): Promise<string>{
+    async createNodeAccount(networkId: string, nodeName: string): Promise<string> {
         const nodeDir = path.join(this.NETWORKS_DIR, networkId, nodeName)
         const containerName = `${networkId}-${nodeName}-init`
         const imageTag = `${this.GETH_IMAGE}:${this.GETH_VERSION}`
@@ -94,13 +94,13 @@ export class DockerService {
 
             const container = await this.docker.createContainer({
                 Image: imageTag,
-                name:containerName,
+                name: containerName,
                 Tty: true,
                 Entrypoint: ['geth'],
                 Cmd: [
-                    '--password=/eth/password.txt', 
+                    '--password=/eth/password.txt',
                     '--datadir=/eth',
-                    'account', 'new' 
+                    'account', 'new'
                 ],
                 HostConfig: {
                     AutoRemove: true,
@@ -108,32 +108,32 @@ export class DockerService {
                 }
             })
             await container.start()
-            
+
             // capture logs and extract the account address
-            const stream = await container.logs({ follow:true, stdout:true, stderr:true })
+            const stream = await container.logs({ follow: true, stdout: true, stderr: true })
             const addressRegex = /Public address of the key:\s*(0x[a-fA-F0-9]+)/
-            
-            let accountAddress:string = null
+
+            let accountAddress: string = null
             stream.on('data', (data) => {
-                const logData = data.toString() 
+                const logData = data.toString()
                 console.log(logData)
 
                 const match = addressRegex.exec(logData)
-                if(match && match[1]) {
+                if (match && match[1]) {
                     accountAddress = match[1].replace(/^0x/, '')
                 }
             })
             // wait for the container to stop
-            await container.wait() 
+            await container.wait()
             console.log(`${nodeName} account created`)
-            if(accountAddress) {
+            if (accountAddress) {
                 console.log(`${nodeName} addres: ${accountAddress}`)
                 return accountAddress
             } else {
                 throw new Error('Failed to extract account addres from logs')
             }
         } catch (error) {
-            throw new Error(`Error creating ${nodeName} account: ${error.message}`);            
+            throw new Error(`Error creating ${nodeName} account: ${error.message}`);
         }
     }
 
@@ -141,11 +141,11 @@ export class DockerService {
         const nodeDir = path.join(this.NETWORKS_DIR, networkId, nodeName)
         const containerName = `${networkId}-${nodeName}-init`
         const imageTag = `${this.GETH_IMAGE}:${this.GETH_VERSION}`
-        
+
         try {
-             //Verificar si el contenedor ya existe
-             await this.removeExistingContainer(containerName)
-             
+            //Verificar si el contenedor ya existe
+            await this.removeExistingContainer(containerName)
+
             // Create and start the container with the Geth init command
             const container = await this.docker.createContainer({
                 Image: imageTag,
@@ -158,15 +158,15 @@ export class DockerService {
                     Binds: [`${nodeDir}:/eth`], // Mount the host directory to /eth in the container
                 },
             });
-    
+
             await container.start();
-            const stream = await container.logs({ follow:true, stdout:true, stderr:true })
+            const stream = await container.logs({ follow: true, stdout: true, stderr: true })
             stream.on('data', (data) => { console.log(data.toString()) })
             const result = await container.wait() // Wait for the container to complete initialization
             if (result.StatusCode !== 0) {
                 throw new Error(`Genesis block initialization failed with status code: ${result.StatusCode}`)
             }
-    
+
             console.log(`Genesis block initialized successfully in ${nodeName}`)
         } catch (error) {
             throw new Error(`Failed to initialize node ${nodeName}: ${error.message}`)
@@ -198,7 +198,7 @@ export class DockerService {
                     ]
                 }
             });
-    
+
             // Start and log output
             await container.start();
             const stream = await container.logs({ follow: true, stdout: true, stderr: true })
@@ -208,9 +208,9 @@ export class DockerService {
 
             const publicKeyPath = path.join(bootnodeDir, 'public.key')
             fs.writeFileSync(publicKeyPath, publicKey.trim())
-            
-            console.log(`Bootnode public key written to ${bootnodeDir}` )
-            console.log('Bootnode keys initialized successfully')            
+
+            console.log(`Bootnode public key written to ${bootnodeDir}`)
+            console.log('Bootnode keys initialized successfully')
         } catch (error) {
             throw new Error(`Error initializing bootnode keys: ${error.message}`)
         }
@@ -266,7 +266,7 @@ export class DockerService {
             // Retornar el enode URL del bootnode
             const bootnodePublicKey = fs.readFileSync(publicKeyPath, 'utf8')
             return `enode://${bootnodePublicKey}@${ipBootNode}:30301`;
-        }catch (error) {
+        } catch (error) {
             throw new Error(`Failed to start bootnode: ${error.message}`);
         }
     }
@@ -276,74 +276,77 @@ export class DockerService {
             const folderAddressPath = path.join(nodeDir, 'keystore')
             const files = fs.readdirSync(folderAddressPath)
             const addressFilePath = path.join(folderAddressPath, files[0])
-            const addressNode = JSON.parse(fs.readFileSync(addressFilePath, 'utf8')).address    
+            const addressNode = JSON.parse(fs.readFileSync(addressFilePath, 'utf8')).address
             return addressNode
         } catch (error) {
             throw new Error(`Error reading the node address: ${error.message}`)
         }
-    } 
+    }
 
-    async startNode( params: {
-        node: Node, 
+    async startNode(params: {
+        node: Node,
         chainId: number,
         networkId: string,
-        subnet: string, 
+        subnet: string,
         bootnodeEnode: string
-    }
-    ): Promise<void> {
-        const {node, chainId, networkId, subnet, bootnodeEnode } = params
-        
+    }): Promise<void> {
+        const { node, chainId, networkId, subnet, bootnodeEnode } = params;
+
         const networkDir = path.join(this.NETWORKS_DIR, networkId);
-        const nodeDir = path.join(networkDir, node.name)
-        
+        const nodeDir = path.join(networkDir, node.name);
+
         const containerName = `${networkId}-${node.name}`;
         const imageTag = `${this.GETH_IMAGE}:${this.GETH_VERSION}`;
 
         try {
-            //Verificar si el contenedor ya existe
+            // Verificar si el contenedor ya existe
             await this.removeExistingContainer(containerName);
-        
-        let cmd = CommandBuilder.getCommand(
-            node.type, { 
-                chainId, 
-                ipNode: node.ip, 
-                subnet, bootnodeEnode, 
-                portNode: node.port, 
-                addressNode: node.type === 'miner' ? this.getNodeAddress(nodeDir) : undefined 
-            })
-        
-        const container = await this.docker.createContainer({
-            Image: imageTag,
-            name: containerName,
-            Entrypoint: ['geth'], 
-            Cmd: cmd,
-            ExposedPorts: node.port ? {  
-                [`${node.port}/tcp`]: {}
-            } : undefined,
-            HostConfig: {
-                Binds: [`${nodeDir}:/root/.ethereum`],
-                NetworkMode: networkId,
-                PortBindings: node.port ? {
-                    [`${node.port}/tcp`]: [{ HostPort: `${node.port}` }]
-                } : undefined
-            },
-            NetworkingConfig: {
-                EndpointsConfig: {
-                    [networkId]: {
-                        IPAMConfig: {
-                            IPv4Address: node.ip
+
+            let cmd = CommandBuilder.getCommand(
+                node.type, {
+                chainId,
+                ipNode: node.ip,
+                subnet, bootnodeEnode,
+                portNode: node.port,
+                addressNode: node.type === 'miner' ? this.getNodeAddress(nodeDir) : undefined
+            }
+            );
+
+            // Añadir la opción --ipcdisable para deshabilitar el IPC
+            cmd.push('--ipcdisable');
+
+            const container = await this.docker.createContainer({
+                Image: imageTag,
+                name: containerName,
+                Entrypoint: ['geth'],
+                Cmd: cmd,
+                ExposedPorts: node.port ? {
+                    [`${node.port}/tcp`]: {}
+                } : undefined,
+                HostConfig: {
+                    Binds: [`${nodeDir}:/root/.ethereum`],
+                    NetworkMode: networkId,
+                    PortBindings: node.port ? {
+                        [`${node.port}/tcp`]: [{ HostPort: `${node.port}` }]
+                    } : undefined
+                },
+                NetworkingConfig: {
+                    EndpointsConfig: {
+                        [networkId]: {
+                            IPAMConfig: {
+                                IPv4Address: node.ip
+                            }
                         }
                     }
                 }
-            }
-        });
+            });
 
-        await container.start();
-        console.log(`Started ${node.type} node container: ${containerName}`);
-    } catch (error) {
-        throw new Error(`Failed to start ${node.type} node: ${error.message}`);
+            await container.start();
+            console.log(`Started ${node.type} node container: ${containerName}`);
+        } catch (error) {
+            throw new Error(`Failed to start ${node.type} node: ${error.message}`);
+        }
     }
-}
     async createDockerNetwork(networkId: string, subnet: string): Promise<void> {
         try {
             try {
@@ -390,7 +393,7 @@ export class DockerService {
 
             // 3. Iniciar los nodos
             for (const node of network.nodes) {
-                await this.startNode({node, chainId: network.chainId, networkId: network.id, subnet: network.subnet, bootnodeEnode});
+                await this.startNode({ node, chainId: network.chainId, networkId: network.id, subnet: network.subnet, bootnodeEnode });
                 // Esperar un poco entre cada nodo para evitar problemas de inicio
                 await new Promise(resolve => setTimeout(resolve, 2000));
             }

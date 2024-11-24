@@ -5,6 +5,7 @@ import { GenesisFile, GenesisConfig } from '../types/genesis';
 import fs from 'fs';
 import path, { join } from 'path';
 import { DockerService } from '../services/DockerService';
+import { Node } from '../types/node';
 
 const GETH_VERSION = 'v1.13.15';
 
@@ -18,7 +19,7 @@ if (!fs.existsSync(NETWORKS_DIR)) {
     fs.mkdirSync(NETWORKS_DIR, { recursive: true });
 }
 
-function generateExtradata(addresses: string[]): string{
+function generateExtradata(addresses: string[]): string {
     // validate addresses
     const addressRegex = /^[a-fA-F0-9]{40}$/ // Regex to match a 40-character hexadecimal string
     for (let address of addresses) {
@@ -32,8 +33,8 @@ function generateExtradata(addresses: string[]): string{
     const zerosBack = "00".repeat(65) // 65-bytes of zeroes
     const joinedAddresses = addresses.join('')
     const extradata = '0x' + zerosFront + joinedAddresses + zerosBack
-    
-    return extradata       
+
+    return extradata
 }
 
 function generateGenesisFile(network: Network, addresses: string[]): GenesisFile {
@@ -54,7 +55,7 @@ function generateGenesisFile(network: Network, addresses: string[]): GenesisFile
 
     const alloc: { [key: string]: { balance: string } } = {};
     network.alloc.forEach(allocation => {
-        const balanceInWei = BigInt(allocation.value) * BigInt(10**18);
+        const balanceInWei = BigInt(allocation.value) * BigInt(10 ** 18);
         alloc[allocation.address] = {
             balance: balanceInWei.toString()
         };
@@ -74,8 +75,8 @@ export function listNetworks(req: Request, res: Response) {
     try {
         const data = fs.readFileSync(NETWORKS_FILE, 'utf8')
         const networks: Network[] = JSON.parse(data)
-        
-        if(isNetworkArray(networks)) {
+
+        if (isNetworkArray(networks)) {
             res.send(networks)
         } else {
             res.status(500).send('Error: the networks.json file has an error')
@@ -87,7 +88,7 @@ export function listNetworks(req: Request, res: Response) {
 
 function validateBody(body: any): Network {
     console.log('New network data: ', JSON.stringify(body, null, 2))
-    if(!isNetwork(body)) {
+    if (!isNetwork(body)) {
         throw new Error('Invalid network format')
     }
     return body as Network
@@ -114,7 +115,7 @@ export async function createNetwork(req: Request, res: Response) {
 
         // 3. Leer redes existentes y crear backup
         let existingNetworks: Network[] = [];
-        
+
         if (fs.existsSync(NETWORKS_FILE)) {
             try {
                 // Crear backup
@@ -156,7 +157,7 @@ export async function createNetwork(req: Request, res: Response) {
         if (fs.existsSync(networkDir)) {
             fs.rmSync(networkDir, { recursive: true, force: true });
         }
-        
+
         fs.mkdirSync(networkDir, { recursive: true });
 
         // 6. Crear y generar password
@@ -167,10 +168,10 @@ export async function createNetwork(req: Request, res: Response) {
         // 7. Inicializar bootnode
         console.log(`Initializing bootnode`);
         const bootnodeDir = path.join(networkDir, 'bootnode')
-        fs.mkdirSync(bootnodeDir, { recursive: true})
+        fs.mkdirSync(bootnodeDir, { recursive: true })
         const bootnodePasswordPath = path.join(bootnodeDir, 'password.txt');
         fs.copyFileSync(passwordPath, bootnodePasswordPath);
-        
+
         try {
             await docker.initializeBootnode(newNetwork.id)
         } catch (error) {
@@ -181,9 +182,9 @@ export async function createNetwork(req: Request, res: Response) {
         for (const node of newNetwork.nodes) {
             const nodeDir = path.join(networkDir, node.name);
             fs.mkdirSync(nodeDir, { recursive: true });
-            
+
             // crea una cuanta si el nodo es minero
-            if (node.type == 'miner'){
+            if (node.type == 'miner') {
                 const nodePasswordPath = path.join(nodeDir, 'password.txt')
                 fs.copyFileSync(passwordPath, nodePasswordPath)
                 try {
@@ -226,28 +227,28 @@ export async function createNetwork(req: Request, res: Response) {
             console.log('Updating networks.json...');
             // Agregar la nueva red al array
             existingNetworks.push(newNetwork);
-        
+
             // Escribir directamente al archivo final sin usar archivo temporal
             const networkData = JSON.stringify(existingNetworks, null, 2);
-            
+
             // Escribir de manera síncrona
             fs.writeFileSync(NETWORKS_FILE, networkData, { encoding: 'utf8', flag: 'w' });
-            
+
             // Verificar inmediatamente que se escribió correctamente
             const verificationContent = fs.readFileSync(NETWORKS_FILE, 'utf8');
             const verifiedNetworks = JSON.parse(verificationContent);
-            
+
             if (verifiedNetworks.length !== existingNetworks.length) {
                 throw new Error('Network save verification failed');
             }
-        
+
             console.log(`Successfully wrote ${verifiedNetworks.length} networks to file`);
-            
+
             // Eliminar el backup si todo salió bien
             if (fs.existsSync(backupFile)) {
                 fs.unlinkSync(backupFile);
             }
-        
+
         } catch (error) {
             console.error('Error updating networks.json:', error);
             // Restaurar backup si existe
@@ -271,7 +272,7 @@ export async function createNetwork(req: Request, res: Response) {
 
     } catch (error) {
         console.error('\n=== ERROR CREATING NETWORK ===', error);
-        
+
         // Limpiar directorio de red si se creó
         if (newNetwork?.id) {
             const networkDir = path.join(NETWORKS_DIR, newNetwork.id);
@@ -279,7 +280,7 @@ export async function createNetwork(req: Request, res: Response) {
                 fs.rmSync(networkDir, { recursive: true, force: true });
             }
         }
-        
+
         // Restaurar backup si existe
         if (fs.existsSync(backupFile)) {
             fs.copyFileSync(backupFile, NETWORKS_FILE);
@@ -306,7 +307,7 @@ export function networkDetails(req: Request, res: Response) {
     try {
         const data = fs.readFileSync(NETWORKS_FILE, 'utf8')
         const networks: Network[] = JSON.parse(data)
-        if(isNetworkArray(networks)) {
+        if (isNetworkArray(networks)) {
             const network = networks.find(net => net.id === networkId)
             if (!network) {
                 return res.status(404).send('Network not found')
@@ -326,7 +327,7 @@ export async function startNetwork(req: Request, res: Response) {
         const data = fs.readFileSync(NETWORKS_FILE, "utf8")
         const networks: Network[] = JSON.parse(data)
         const network = networks.find((net) => net.id === networkId)
-        
+
         if (!network) {
             return res.status(404).send("Network not found")
         }
@@ -347,8 +348,10 @@ export async function startNetwork(req: Request, res: Response) {
     }
 }
 
-export function deleteNetwork(req: Request, res: Response) {
+export async function deleteNetwork(req: Request, res: Response) {
     const networkId = req.params.id;
+    const docker = new DockerService();
+
     try {
         const data = fs.readFileSync(NETWORKS_FILE, 'utf8');
         let networks: Network[] = JSON.parse(data);
@@ -365,6 +368,16 @@ export function deleteNetwork(req: Request, res: Response) {
         // Actualizar el archivo networks.json
         fs.writeFileSync(NETWORKS_FILE, JSON.stringify(networks, null, 2));
 
+        // Eliminar los contenedores Docker asociados a la red
+        for (const node of deletedNetwork.nodes) {
+            const containerName = `${networkId}-${node.name}`;
+            await docker.removeExistingContainer(containerName);
+        }
+
+        // Eliminar el contenedor del bootnode
+        const bootnodeContainerName = `${networkId}-bootnode`;
+        await docker.removeExistingContainer(bootnodeContainerName);
+
         // Opcional: Eliminar la carpeta asociada a la red
         const networkDir = path.join(NETWORKS_DIR, networkId);
         if (fs.existsSync(networkDir)) {
@@ -375,5 +388,67 @@ export function deleteNetwork(req: Request, res: Response) {
     } catch (error) {
         console.error('Error al eliminar la red:', error);
         res.status(500).json({ message: 'Error al eliminar la red', error: error.message });
+    }
+}
+
+function isNode(node: any): node is Node {
+    return node && typeof node === 'object' &&
+        typeof node.name === 'string' &&
+        typeof node.type === 'string' &&
+        typeof node.ip === 'string' &&
+        (typeof node.port === 'number' || node.port === null || node.port === undefined);
+}
+
+export async function addNodeToNetwork(req: Request, res: Response) {
+    const networkId = req.params.id;
+    const newNode: Node = req.body;
+    const docker = new DockerService();
+
+    try {
+        const data = fs.readFileSync(NETWORKS_FILE, 'utf8');
+        let networks: Network[] = JSON.parse(data);
+
+        // Encontrar la red por su ID
+        const network = networks.find(net => net.id === networkId);
+        if (!network) {
+            return res.status(404).json({ message: 'Red no encontrada' });
+        }
+
+        // Validar el nuevo nodo
+        if (!isNode(newNode)) {
+            return res.status(400).json({ message: 'Formato de nodo inválido' });
+        }
+
+        // Agregar el nuevo nodo a la red
+        network.nodes.push(newNode);
+
+        // Actualizar el archivo networks.json
+        fs.writeFileSync(NETWORKS_FILE, JSON.stringify(networks, null, 2));
+
+        // Crear la carpeta del nuevo nodo y generar la cuenta si es un minero
+        const networkDir = path.join(NETWORKS_DIR, networkId);
+        const nodeDir = path.join(networkDir, newNode.name);
+        fs.mkdirSync(nodeDir, { recursive: true });
+
+        if (newNode.type === 'miner') {
+            const passwordPath = path.join(networkDir, 'password.txt');
+            const nodePasswordPath = path.join(nodeDir, 'password.txt');
+            fs.copyFileSync(passwordPath, nodePasswordPath);
+            await docker.createNodeAccount(networkId, newNode.name);
+        }
+
+        // Iniciar el nuevo nodo
+        await docker.startNode({
+            node: newNode,
+            chainId: network.chainId,
+            networkId: network.id,
+            subnet: network.subnet,
+            bootnodeEnode: `enode://${network.ipBootNode}@${network.ipBootNode}:30301`
+        });
+
+        res.status(201).json({ message: 'Nodo agregado y lanzado correctamente', node: newNode });
+    } catch (error) {
+        console.error('Error al agregar el nodo:', error);
+        res.status(500).json({ message: 'Error al agregar el nodo', error: error.message });
     }
 }
