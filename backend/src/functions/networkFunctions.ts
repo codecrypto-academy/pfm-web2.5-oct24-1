@@ -321,6 +321,41 @@ export function networkDetails(req: Request, res: Response) {
     }
 }
 
+export async function getNetworkStatus(req: Request, res: Response) {
+    const networkId = req.params.id;
+    const docker = new DockerService();
+
+    try {
+        const data = fs.readFileSync(NETWORKS_FILE, 'utf8');
+        let networks: Network[] = JSON.parse(data);
+
+        // Encontrar la red por su ID
+        const network = networks.find(net => net.id === networkId);
+        if (!network) {
+            return res.status(404).json({ message: 'Red no encontrada' });
+        }
+
+        // Verificar el estado de los contenedores Docker asociados a los nodos de la red
+        let isRunning = false;
+        for (const node of network.nodes) {
+            const containerName = `${networkId}-${node.name}`;
+            const containerExists = await docker.containerExistsInNetwork(containerName, networkId);
+            if (containerExists) {
+                const containerInfo = await docker.getContainerInfo(containerName);
+                if (containerInfo.State.Running) {
+                    isRunning = true;
+                    break;
+                }
+            }
+        }
+
+        res.status(200).json({ isRunning });
+    } catch (error) {
+        console.error('Error al obtener el estado de la red:', error);
+        res.status(500).json({ message: 'Error al obtener el estado de la red', error: error.message });
+    }
+}
+
 export async function startNetwork(req: Request, res: Response) {
     const networkId = req.params.id
     try {
@@ -405,15 +440,21 @@ export async function deleteNetwork(req: Request, res: Response) {
         // Actualizar el archivo networks.json
         fs.writeFileSync(NETWORKS_FILE, JSON.stringify(networks, null, 2));
 
-        // Eliminar los contenedores Docker asociados a la red
+        // Detener y eliminar los contenedores Docker asociados a los nodos de la red
         for (const node of deletedNetwork.nodes) {
             const containerName = `${networkId}-${node.name}`;
-            await docker.removeExistingContainer(containerName);
+            const containerExists = await docker.containerExistsInNetwork(containerName, networkId);
+            if (containerExists) {
+                await docker.removeExistingContainer(containerName);
+            }
         }
 
         // Eliminar el contenedor del bootnode
         const bootnodeContainerName = `${networkId}-bootnode`;
-        await docker.removeExistingContainer(bootnodeContainerName);
+        const bootnodeContainerExists = await docker.containerExistsInNetwork(bootnodeContainerName, networkId);
+        if (bootnodeContainerExists) {
+            await docker.removeExistingContainer(bootnodeContainerName);
+        }
 
         // Opcional: Eliminar la carpeta asociada a la red
         const networkDir = path.join(NETWORKS_DIR, networkId);
@@ -437,7 +478,7 @@ function isNode(node: any): node is Node {
 }
 
 export async function addNode(req: Request, res: Response) {
-    const networkId = req.params.id;
+    const networkId = req.params.id_network;
     const newNode: Node = req.body;
     const docker = new DockerService();
 
@@ -482,7 +523,7 @@ export async function addNode(req: Request, res: Response) {
 }
 
 export async function deleteNodeFromNetwork(req: Request, res: Response) {
-    const networkId = req.params.id_Network;
+    const networkId = req.params.id_network;
     const nodeName = req.params.nodeName;
     const docker = new DockerService();
 

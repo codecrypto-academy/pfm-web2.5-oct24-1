@@ -34,7 +34,6 @@ export class DockerService {
                     });
                 });
             });
-
         } catch (error) {
             throw new Error(`Failed to pull Geth image: ${error.message}`);
         }
@@ -79,6 +78,48 @@ export class DockerService {
         }
     }
 
+    public async removeExistingContainer(containerName: string): Promise<void> {
+        const existingContainer = this.docker.getContainer(containerName);
+        try {
+            console.log(`Checking if ${containerName} already exists`);
+            const containerInfo = await existingContainer.inspect();
+            const currentContainerState = containerInfo.State.Status;
+            console.log(`Status of the container ${containerName}: ${currentContainerState}`);
+            switch (currentContainerState) {
+                case 'restarting':
+                case 'running':
+                    console.log(`Stopping container: ${containerName}...`);
+                    await existingContainer.stop();
+                    break;
+
+                case 'paused':
+                    console.log(`Unpausing container: ${containerName}...`);
+                    await existingContainer.unpause();
+                    console.log(`Stopping container: ${containerName}...`);
+                    await existingContainer.stop();
+                    break;
+
+                case 'created':
+                case 'exited':
+                case 'dead':
+                    console.log(`Container is already stopped: ${containerName}`);
+                    break;
+
+                default:
+                    console.log(`Unknown container state: ${containerName}`);
+            }
+            console.log(`Removing container: ${containerName}`);
+            await existingContainer.remove({ force: true });
+            console.log(`Container has been removed successfully: ${containerName}`);
+        } catch (error) {
+            if (error.statusCode === 404) {
+                console.log(`Container ${containerName} not found`);
+            } else {
+                console.log(`Error removing container: ${containerName} : ${error.message}`);
+            }
+        }
+    }
+
     public async containerExistsInNetwork(containerName: string, networkId: string): Promise<boolean> {
         const existingContainer = this.docker.getContainer(containerName);
         try {
@@ -92,49 +133,6 @@ export class DockerService {
             }
         }
     }
-
-    public async removeExistingContainer(containerName: string): Promise<void> {
-        const existingContainer = this.docker.getContainer(containerName);
-        try {
-            console.log(`Checking if ${containerName} already exists`)
-            const containerInfo = await existingContainer.inspect()
-            const currentContainerState = containerInfo.State.Status
-            console.log(`Status of the container ${containerName}: ${currentContainerState}`)
-            switch (currentContainerState) {
-                case 'restarting':
-                case 'running':
-                    console.log(`Stopping container: ${containerName}...`)
-                    await existingContainer.stop();
-                    break
-
-                case 'paused':
-                    console.log(`Unpausing container: ${containerName}...`)
-                    await existingContainer.unpause()
-                    console.log(`Stopping container: ${containerName}...`)
-                    await existingContainer.stop()
-                    break
-
-                case 'created':
-                case 'exited':
-                case 'dead':
-                    console.log(`Container is already stopped: ${containerName}`)
-                    break
-
-                default:
-                    console.log(`Unkown container state: ${containerName}`)
-            }
-            console.log(`Removing container: ${containerName}`)
-            await existingContainer.remove({ force: true })
-            console.log(`Container has been removed successfully: ${containerName}`)
-        } catch (error) {
-            if (error.statusCode === 404) {
-                console.log(`Container ${containerName} not found`)
-            } else {
-                console.log(`Error removing container: ${containerName} : ${error.message}`)
-            }
-        }
-    }
-
 
     // creates a node account and returns the address string
     async createNodeAccount(networkId: string, nodeName: string): Promise<string> {
@@ -451,5 +449,13 @@ export class DockerService {
         } catch (error) {
             throw new Error(`Failed to start network: ${error.message}`);
         }
+    }
+
+    async getContainerInfo(containerName: string) {
+
+        const container = this.docker.getContainer(containerName);
+
+        return container.inspect();
+
     }
 }
