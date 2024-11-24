@@ -40,6 +40,59 @@ export class DockerService {
         }
     }
 
+    public async stopExistingContainer(containerName: string): Promise<void> {
+        const existingContainer = this.docker.getContainer(containerName);
+        try {
+            console.log(`Checking if ${containerName} already exists`);
+            const containerInfo = await existingContainer.inspect();
+            const currentContainerState = containerInfo.State.Status;
+            console.log(`Status of the container ${containerName}: ${currentContainerState}`);
+            switch (currentContainerState) {
+                case 'restarting':
+                case 'running':
+                    console.log(`Stopping container: ${containerName}...`);
+                    await existingContainer.stop();
+                    break;
+
+                case 'paused':
+                    console.log(`Unpausing container: ${containerName}...`);
+                    await existingContainer.unpause();
+                    console.log(`Stopping container: ${containerName}...`);
+                    await existingContainer.stop();
+                    break;
+
+                case 'created':
+                case 'exited':
+                case 'dead':
+                    console.log(`Container is already stopped: ${containerName}`);
+                    break;
+
+                default:
+                    console.log(`Unknown container state: ${containerName}`);
+            }
+        } catch (error) {
+            if (error.statusCode === 404) {
+                console.log(`Container ${containerName} not found`);
+            } else {
+                console.log(`Error stopping container: ${containerName} : ${error.message}`);
+            }
+        }
+    }
+
+    public async containerExistsInNetwork(containerName: string, networkId: string): Promise<boolean> {
+        const existingContainer = this.docker.getContainer(containerName);
+        try {
+            const containerInfo = await existingContainer.inspect();
+            return !!containerInfo.NetworkSettings.Networks[networkId];
+        } catch (error) {
+            if (error.statusCode === 404) {
+                return false;
+            } else {
+                throw error;
+            }
+        }
+    }
+
     public async removeExistingContainer(containerName: string): Promise<void> {
         const existingContainer = this.docker.getContainer(containerName);
         try {
@@ -271,7 +324,7 @@ export class DockerService {
         }
     }
 
-    private getNodeAddress(nodeDir: string): string {
+    public getNodeAddress(nodeDir: string): string {
         try {
             const folderAddressPath = path.join(nodeDir, 'keystore')
             const files = fs.readdirSync(folderAddressPath)
@@ -349,37 +402,33 @@ export class DockerService {
     }
     async createDockerNetwork(networkId: string, subnet: string): Promise<void> {
         try {
-            try {
-                const network = await this.docker.getNetwork(networkId);
-                await network.remove()
-                console.log(`Removed existing Docker network: ${networkId}`);
-            } catch (error) {
-                console.log(`No existing Docker network found: ${networkId}`);
-            }
-
-            console.log(`Creating Docker network: ${networkId}`)
-
-            await this.docker.createNetwork({
-                Name: networkId,
-                Driver: 'bridge',
-                CheckDuplicate: true,
-                Attachable: true,
-                IPAM: {
-                    Driver: 'default',
-                    Config: [{ Subnet: subnet }],
-                },
-                Labels: {
-                    project: `${networkId} private ethnetwork`
-                }
-            });
+            const network = await this.docker.getNetwork(networkId);
+            await network.inspect();
+            console.log(`Docker network ${networkId} already exists`);
         } catch (error) {
-            throw new Error(`Failed to create Docker network: ${error.message}`);
+            if (error.statusCode === 404) {
+                console.log(`Creating Docker network: ${networkId}`);
+                await this.docker.createNetwork({
+                    Name: networkId,
+                    Driver: 'bridge',
+                    CheckDuplicate: true,
+                    Attachable: true,
+                    IPAM: {
+                        Driver: 'default',
+                        Config: [{ Subnet: subnet }],
+                    },
+                    Labels: {
+                        project: `${networkId} private ethnetwork`
+                    }
+                });
+            } else {
+                throw new Error(`Failed to create Docker network: ${error.message}`);
+            }
         }
     }
 
     async startNetwork(network: Network): Promise<void> {
         try {
-
             console.log(`Starting network ${network.id}...`);
 
             // 1. Asegurarse de que la imagen de Geth está disponible
@@ -391,7 +440,7 @@ export class DockerService {
             // 3. Iniciar el bootnode
             const bootnodeEnode = await this.startBootnode(network.id, network.ipBootNode, network.subnet);
 
-            // 3. Iniciar los nodos
+            // 4. Iniciar los nodos
             for (const node of network.nodes) {
                 await this.startNode({ node, chainId: network.chainId, networkId: network.id, subnet: network.subnet, bootnodeEnode });
                 // Esperar un poco entre cada nodo para evitar problemas de inicio
