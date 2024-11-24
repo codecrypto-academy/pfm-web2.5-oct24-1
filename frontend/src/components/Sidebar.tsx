@@ -18,9 +18,10 @@ export const Sidebar: React.FC = () =>{
                     <ul className='sidebar-submenu'>
                         <h5 className='text-start ps-3'>Network: {id} </h5>
                         <li>
-                            <Link to={`/network/${id}`}>Network Details</Link>
+                            <Link to={`/network/${id}`}>Network details</Link>
                         </li>
                         <li><Link to={"#"}>Operations</Link></li>
+                        <li><Link to={`/network/${id}/operation/blocks`}>Last blocks</Link></li>
                     </ul>
 
                 )}
