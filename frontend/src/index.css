@@ -76,3 +76,22 @@ footer{
 form{
     width: 80%
 }
+
+.table {
+    width: 100%; /* Asegura que la tabla ocupe todo el contenedor */
+    table-layout: fixed; /* Controla que las columnas tengan un tamaño uniforme */
+  }
+  
+  .table th,
+  .table td {
+    text-align: left;
+    padding: 8px;
+    overflow: hidden; /* Oculta contenido que desborde */
+    text-overflow: ellipsis; /* Añade puntos suspensivos si hay desbordamiento */
+    white-space: nowrap; /* Mantiene el texto en una sola línea */
+  }
+  
+  .table td.hash-column {
+    width: 250px; /* Ajusta el ancho deseado para la columna hash */
+    max-width: 250px; /* Define el ancho máximo */
+  }
