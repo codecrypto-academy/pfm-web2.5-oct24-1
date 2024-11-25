@@ -134,3 +134,34 @@ form{
     overflow-wrap: break-word;
   }
   
+
+  /* Address balance styles */
+
+  .address-container {
+    border: 1px solid #ddd;
+    padding: 20px;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    margin: 20px 0;
+    max-width: 800px;
+  }
+  
+  .address-title {
+    font-size: 1.5em;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #333;
+    text-align: left;
+  }
+  
+  .address-details p {
+    margin: 5px 0;
+    font-size: 1.1em;
+    color: #555;
+  }
+  
+  .address-details strong {
+    color: #000;
+  }
+  

@@ -9,6 +9,7 @@ import { AddNetwork } from './components/AddNetwork';
 import { LastBlocks } from './components/LastBlocks';
 import { BlockTransactions } from './components/BlockTransactions';
 import { Transaction } from './components/Transaction';
+import { Address } from './components/Address';
 import './index.css';
 
 const queryClient = new QueryClient({
@@ -35,6 +36,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/network/:id/operation/blocks" element={<LastBlocks />} />
             <Route path="/network/:id/operation/block/:blockId" element={<BlockTransactions />} />
             <Route path="/network/:id/operation/transaction/:txId" element={<Transaction />} />
+            <Route path="/network/:id/operation/address/:address" element={<Address />} />
           </Route>
         </Routes>
       </BrowserRouter>
