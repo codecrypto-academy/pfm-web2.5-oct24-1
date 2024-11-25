@@ -27,34 +27,34 @@ export const LastBlocks: React.FC = () => {
   );
 
   if (isLoading) {
-    return <div>Loading blocks...</div>;
+    return <div className="loading-message">Loading blocks...</div>;
   }
 
   if (error) {
-    return <div>Error fetching blocks. Please try again later.</div>;
+    return <div className="error-message">Error fetching blocks. Please try again later.</div>;
   }
 
   if (!blocks || blocks.length === 0) {
-    return <div>No blocks found for this network.</div>;
+    return <div className="empty-message">No blocks found for this network.</div>;
   }
 
   return (
-    <div>
-      <h3>Last Blocks</h3>
-      <table className="table">
+    <div className="last-blocks-container">
+      <h3 className="last-blocks-title">Last blocks of the network</h3>
+      <table className="styled-table">
         <thead>
           <tr>
-            <th scope="col">Number</th>
-            <th scope="col">Hash</th>
-            <th scope="col">Difficulty</th>
-            <th scope="col">Timestamp</th>
+            <th>Number</th>
+            <th>Hash</th>
+            <th>Difficulty</th>
+            <th>Timestamp</th>
           </tr>
         </thead>
         <tbody>
           {blocks.map((block) => (
             <tr key={block.number}>
               <td>
-                <Link to={`/network/${networkId}/explorer/block/${block.number}`}>
+                <Link to={`/network/${networkId}/explorer/block/${block.number}`} className="link">
                   {block.number}
                 </Link>
               </td>

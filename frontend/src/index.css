@@ -77,6 +77,84 @@ form{
     width: 80%
 }
 
+/*Last Blocks Styles*/
+.last-blocks-container {
+  padding: 20px;
+  max-width: 1200px;
+}
+
+.last-blocks-title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #333;
+  text-align: start;
+}
+
+.styled-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 1rem;
+  text-align: left;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.styled-table thead {
+  background-color: #ccc;
+  color: white;
+}
+
+.styled-table th, 
+.styled-table td {
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+}
+
+.styled-table tbody tr {
+  transition: background-color 0.3s;
+}
+
+.styled-table tbody tr:hover {
+  background-color: #f1f1f1;
+}
+
+.styled-table tbody tr:nth-of-type(even) {
+  background-color: #f9f9f9;
+}
+
+.link {
+  color: #333;
+  font-weight: bold;
+  transition: color 0.3s;
+}
+
+.link:hover {
+  color: #0056b3;
+}
+
+.loading-message,
+.error-message,
+.empty-message {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #777;
+  padding: 20px;
+}
+
+@media (max-width: 768px) {
+  .last-blocks-container {
+    padding: 10px;
+  }
+
+  .styled-table {
+    font-size: 0.9rem;
+  }
+}
+
+
 /*Blocks details*/
 
 .block-container {
