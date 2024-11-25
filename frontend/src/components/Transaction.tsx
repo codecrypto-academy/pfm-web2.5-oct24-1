@@ -48,7 +48,7 @@ export const Transaction: React.FC = () => {
     { 
       label: 'From', 
       value: (
-        <Link to={`/network/${id}/operation/balance/${transaction.from}`}>
+        <Link to={`/network/${id}/operation/address/${transaction.from}`}>
           {transaction.from.slice(0, 5)}...{transaction.from.slice(-5)}
         </Link>
       ) 
@@ -56,7 +56,7 @@ export const Transaction: React.FC = () => {
     { 
       label: 'To', 
       value: transaction.to ? (
-        <Link to={`/network/${id}/explorer/balance/${transaction.to}`}>
+        <Link to={`/network/${id}/operation/address/${transaction.to}`}>
           {transaction.to.slice(0, 5)}...{transaction.to.slice(-5)}
         </Link>
       ) : 'Contract Creation' 
