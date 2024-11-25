@@ -30,7 +30,7 @@ createRoot(document.getElementById('root')!).render(
         <Routes>
           <Route path="/" element={<App />}>
             <Route index element={<NetworkList />} />
-            <Route path="*" element={<NetworkList />} />
+            <Route path="*" element={<h3>404 page not found</h3>} />
             <Route path="/networks" element={<NetworkList />} />
             <Route path="/network/:id" element={<NetworkDetails />} />
             <Route path="/addnetwork" element={<AddNetwork />} />
@@ -39,6 +39,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path="block/:blockId" element={<BlockTransactions />} />
               <Route path="transaction/:txId" element={<Transaction />} />
               <Route path="address/:address" element={<Address />} />
+              <Route path="*" element={<Explorer />} />
             </Route>
           </Route>
         </Routes>
