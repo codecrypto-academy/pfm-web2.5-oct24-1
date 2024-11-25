@@ -88,7 +88,6 @@ export const BlockTransactions: React.FC = () => {
                 <td className="hash-column">
                   <Link
                     to={`/network/${id}/operation/transaction/${tx.hash}`}
-                    target="_blank"
                   >
                     {tx.hash}
                   </Link>

@@ -77,6 +77,8 @@ form{
     width: 80%
 }
 
+
+  /* Transaction styles*/
 .table {
     width: 100%; /* Asegura que la tabla ocupe todo el contenedor */
     table-layout: fixed; /* Controla que las columnas tengan un tamaño uniforme */
@@ -95,3 +97,40 @@ form{
     width: 250px; /* Ajusta el ancho deseado para la columna hash */
     max-width: 250px; /* Define el ancho máximo */
   }
+
+  /* Transaction styles*/
+.transaction-details {
+    padding: 20px;
+    max-width: 700px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .transaction-details h3 {
+    text-align: left;
+    margin-bottom: 20px;
+  }
+  
+  .transaction-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .transaction-table th,
+  .transaction-table td {
+    text-align: left;
+    padding: 10px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .transaction-table th {
+    width: 40%;
+    font-weight: bold;
+  }
+  
+  .transaction-table td {
+    width: 60%;
+    overflow-wrap: break-word;
+  }
+  
