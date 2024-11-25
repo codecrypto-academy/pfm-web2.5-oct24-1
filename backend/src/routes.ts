@@ -17,6 +17,6 @@ router.delete('/network/:id', (req: Request, res: Response) => { deleteNetwork(r
 //TODO router.delete('/node/:id', (req: Request, res: Response) => { deleteNode(req, res) });
 
 // Faucet endpoint
-router.get('/faucet/:networkId/:address', (req: Request, res: Response) => { getTokens(req, res) })
+router.get('/network/:id/faucet/:address', (req: Request, res: Response) => { getTokens(req, res) })
 
 export default router;
