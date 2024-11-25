@@ -73,6 +73,41 @@ footer{
     padding: 16px;
 }
 
+.sidebar li.active a {
+  background-color: #4b5259; /* Color de fondo más oscuro para el activo */
+  font-weight: bold; /* Resalta el texto del activo */
+  color: #ffffff; /* Asegura contraste en el texto */
+}
+
+.sidebar li.active a:hover {
+  background-color: #5a6268; /* Color ligeramente diferente al pasar el cursor */
+}
+
+.operations-header {
+  font-weight: 600; /* Resalta el texto de Operations */
+  padding: 5px 15px;
+  background-color: #3c4043; /* Fondo consistente con el sidebar */
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.operations-header:hover {
+  background-color: #4b5259; /* Hover similar a los enlaces */
+}
+
+.operations-list {
+  padding-left: 20px; /* Desplazamiento visual para la lista */
+  list-style-type: none; /* Sin viñetas */
+}
+
+.operations-list li {
+  margin: 5px 0;
+}
+
+.operations-list a {
+  padding: 8px 12px; /* Espaciado adicional */
+}
+
 form{
     width: 80%
 }
