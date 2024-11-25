@@ -6,10 +6,10 @@ import { App } from './components/App';
 import { NetworkList } from './components/NetworkList';
 import { NetworkDetails } from './components/NetworkDetails';
 import { AddNetwork } from './components/AddNetwork';
-import { LastBlocks } from './components/LastBlocks';
-import { BlockTransactions } from './components/BlockTransactions';
-import { Transaction } from './components/Transaction';
-import { Address } from './components/Address';
+import { LastBlocks } from './components/operations/LastBlocks';
+import { BlockTransactions } from './components/operations/BlockTransactions';
+import { Transaction } from './components/operations/Transaction';
+import { Address } from './components/operations/Address';
 import './index.css';
 
 const queryClient = new QueryClient({

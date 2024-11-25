@@ -48,13 +48,12 @@ export const BlockTransactions: React.FC = () => {
   if (error instanceof Error) return <div>Error: {error.message}</div>;
   if (!block) return <div>No block data found.</div>;
 
-
-
   return (
-    <div className="block-transactions-container">
-      <h3>Block Details</h3>
+    <div className="block-container">
+      <h3 className="block-title">Block Transactions</h3>
 
-      <div className="block-details-card">
+      {/* Información del bloque */}
+      <div className="block-details">
         <p>
           <strong>Block Number:</strong> {block.number}
         </p>
@@ -86,14 +85,24 @@ export const BlockTransactions: React.FC = () => {
             {block.transactions.map((tx, index) => (
               <tr key={index}>
                 <td className="hash-column">
-                  <Link
-                    to={`/network/${id}/operation/transaction/${tx.hash}`}
-                  >
-                    {tx.hash}
+                  <Link to={`/network/${id}/operation/transaction/${tx.hash}`}>
+                    {truncateString(tx.hash)}
                   </Link>
                 </td>
-                <td><Link to={`/network/${id}/operation/address/${tx.from}`}>{truncateString(tx.from)}</Link></td>
-                <td>{tx.to ? <Link to={`/network/${id}/operation/address/${tx.to}`}>{truncateString(tx.to)}</Link>  : 'Contract Creation'}</td>
+                <td>
+                  <Link to={`/network/${id}/operation/address/${tx.from}`}>
+                    {truncateString(tx.from)}
+                  </Link>
+                </td>
+                <td>
+                  {tx.to ? (
+                    <Link to={`/network/${id}/operation/address/${tx.to}`}>
+                      {truncateString(tx.to)}
+                    </Link>
+                  ) : (
+                    'Contract Creation'
+                  )}
+                </td>
                 <td>{parseInt(tx.value, 10) / 1e18} ETH</td>
               </tr>
             ))}
@@ -109,9 +118,7 @@ export const BlockTransactions: React.FC = () => {
           {isJsonVisible ? 'Hide Raw JSON' : 'Show Raw JSON'}
         </button>
         {isJsonVisible && (
-          <pre className="json-display">
-            {JSON.stringify(block, null, 2)}
-          </pre>
+          <pre className="json-display">{JSON.stringify(block, null, 2)}</pre>
         )}
       </div>
     </div>

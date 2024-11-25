@@ -77,6 +77,34 @@ form{
     width: 80%
 }
 
+/*Blocks details*/
+
+.block-container {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 16px;
+    background-color: #f9f9f9;
+    margin: 16px 0;
+    max-width: 800px;
+  }
+  
+  .block-title {
+    margin: 0 0 16px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #333;
+  }
+  
+  .block-details {
+    margin-bottom: 16px;
+  }
+  
+  .json-display {
+    background-color: #ececec;
+    padding: 8px;
+    border-radius: 4px;
+    overflow-x: auto;
+  }
 
   /* Transaction styles*/
 .table {
