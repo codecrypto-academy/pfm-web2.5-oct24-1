@@ -3,8 +3,8 @@ import fs from 'fs'
 import path from 'path'
 import { isNetworkArray, validateNetwork, isNetwork } from '../validations/networkValidations'
 import { Network } from '../types/network'
-import { DockerService } from '../services/dockerService'
-import { generateGenesisFile } from '../services/genesisGenerator'
+import { DockerService } from '../services/DockerService'
+import { generateGenesisFile } from '../services/GenesisGenerator'
 
 // Definir rutas base
 const BASE_DIR = path.join(process.cwd());
