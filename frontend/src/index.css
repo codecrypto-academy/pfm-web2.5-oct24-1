@@ -99,3 +99,321 @@ form {
 .button-stop {
     color: red;
 }
+.sidebar li.active a {
+  background-color: #4b5259; /* Color de fondo más oscuro para el activo */
+  font-weight: bold; /* Resalta el texto del activo */
+  color: #ffffff; /* Asegura contraste en el texto */
+}
+
+.sidebar li.active a:hover {
+  background-color: #5a6268; /* Color ligeramente diferente al pasar el cursor */
+}
+
+.operations-header {
+  font-weight: 600; /* Resalta el texto de Operations */
+  padding: 5px 15px;
+  background-color: #3c4043; /* Fondo consistente con el sidebar */
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.operations-header:hover {
+  background-color: #4b5259; /* Hover similar a los enlaces */
+}
+
+.operations-list {
+  padding-left: 20px; /* Desplazamiento visual para la lista */
+  list-style-type: none; /* Sin viñetas */
+}
+
+.operations-list li {
+  margin: 5px 0;
+}
+
+.operations-list a {
+  padding: 8px 12px; /* Espaciado adicional */
+}
+
+form{
+    width: 80%
+}
+
+/*Last Blocks Styles*/
+.last-blocks-container {
+  padding: 20px;
+  max-width: 1200px;
+}
+
+.last-blocks-title {
+  font-size: 2rem;
+  font-weight: bold;
+  margin-bottom: 20px;
+  color: #333;
+  text-align: start;
+}
+
+.styled-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 1rem;
+  text-align: left;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.styled-table thead {
+  background-color: #ccc;
+  color: white;
+}
+
+.styled-table th, 
+.styled-table td {
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+}
+
+.styled-table tbody tr {
+  transition: background-color 0.3s;
+}
+
+.styled-table tbody tr:hover {
+  background-color: #f1f1f1;
+}
+
+.styled-table tbody tr:nth-of-type(even) {
+  background-color: #f9f9f9;
+}
+
+.link {
+  color: #333;
+  font-weight: bold;
+  transition: color 0.3s;
+}
+
+.link:hover {
+  color: #0056b3;
+}
+
+.loading-message,
+.error-message,
+.empty-message {
+  text-align: center;
+  font-size: 1.2rem;
+  color: #777;
+  padding: 20px;
+}
+
+@media (max-width: 768px) {
+  .last-blocks-container {
+    padding: 10px;
+  }
+
+  .styled-table {
+    font-size: 0.9rem;
+  }
+}
+
+
+/*Blocks details*/
+
+.block-container {
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 16px;
+    background-color: white;
+    margin: 16px 0;
+    max-width: 800px;
+  }
+  
+  .block-title {
+    margin: 0 0 16px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #333;
+  }
+  
+  .block-details {
+    margin-bottom: 16px;
+  }
+  
+  .json-display {
+    background-color: #ececec;
+    padding: 8px;
+    border-radius: 4px;
+    overflow-x: auto;
+  }
+
+  /* Transaction styles*/
+.table {
+    width: 100%; /* Asegura que la tabla ocupe todo el contenedor */
+    table-layout: fixed; /* Controla que las columnas tengan un tamaño uniforme */
+  }
+  
+  .table th,
+  .table td {
+    text-align: left;
+    padding: 8px;
+    overflow: hidden; /* Oculta contenido que desborde */
+    text-overflow: ellipsis; /* Añade puntos suspensivos si hay desbordamiento */
+    white-space: nowrap; /* Mantiene el texto en una sola línea */
+  }
+  
+  .table td.hash-column {
+    width: 250px; /* Ajusta el ancho deseado para la columna hash */
+    max-width: 250px; /* Define el ancho máximo */
+  }
+
+  /* Transaction styles*/
+.transaction-details {
+    padding: 20px;
+    max-width: 700px;
+    border: 1px solid #ccc;
+    border-radius:8px;
+    background-color:white;
+  }
+  
+  .transaction-details h3 {
+    text-align: left;
+    margin-bottom: 20px;
+  }
+  
+  .transaction-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .transaction-table th,
+  .transaction-table td {
+    text-align: left;
+    padding: 10px;
+    border-bottom: 1px solid #e0e0e0;
+  }
+  
+  .transaction-table th {
+    width: 40%;
+    font-weight: bold;
+  }
+  
+  .transaction-table td {
+    width: 60%;
+    overflow-wrap: break-word;
+  }
+  
+
+  /* Address balance styles */
+
+  .address-container {
+    border: 1px solid #ddd;
+    padding: 20px;
+    border-radius: 8px;
+    background-color: white;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    margin: 20px 0;
+    max-width: 800px;
+  }
+  
+  .address-title {
+    font-size: 1.5em;
+    font-weight: bold;
+    margin-bottom: 15px;
+    color: #333;
+    text-align: left;
+  }
+  
+  .address-details p {
+    margin: 5px 0;
+    font-size: 1.1em;
+    color: #555;
+  }
+  
+  .address-details strong {
+    color: #000;
+  }
+  
+  /*Explorer styles*/
+
+  .explorer-container {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    padding: 20px;
+    max-width: 800px;
+    background: #f8f8f8;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+  
+  .explorer-title {
+    font-size: 2.2rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 10px;
+  }
+  
+  .explorer-description {
+    font-size: 1.1rem;
+    color: #777;
+    margin-bottom: 30px;
+    text-align: left;
+    max-width: 600px;
+  }
+  
+  .search-form {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  
+  .search-input {
+    width: 80%;
+    padding: 12px;
+    font-size: 1rem;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.3s ease;
+  }
+  
+  .search-input:focus {
+    border-color: #007bff;
+  }
+  
+  .search-button {
+    width: 18%;
+    padding: 12px;
+    font-size: 1rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .search-button:hover {
+    background-color: #0056b3;
+  }
+  
+  .component-container {
+    width: 100%;
+    padding: 20px;
+  }
+  
+  @media (max-width: 768px) {
+    .search-form {
+      flex-direction: column;
+    }
+  
+    .search-input {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+  
+    .search-button {
+      width: 100%;
+    }
+  }

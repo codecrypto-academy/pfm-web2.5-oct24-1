@@ -1,5 +1,6 @@
 import express, { Request, Response, Router } from 'express'
 import { networkDetails, createNetwork, listNetworks, getNetworkStatus, startNetwork, stopNetwork, deleteNetwork, addNode, deleteNodeFromNetwork } from './functions/networkFunctions'
+import { getLastBlocks, getBlock, getTransaction, getBalance} from  './functions/explorerFunctions';
 
 const router: Router = express.Router();
 
@@ -15,6 +16,12 @@ router.get('/network/status/:id', (req: Request, res: Response) => { getNetworkS
 //Node endpoints
 router.post('/node/create/:id_network', (req: Request, res: Response) => { addNode(req, res) });
 router.delete('/node/delete/:nodeName/:id_network', (req: Request, res: Response) => { deleteNodeFromNetwork(req, res) });
+
+//Explorer routes
+router.get('/network/:id/explorer/blocks', (req: Request, res: Response) =>{getLastBlocks(req, res)});
+router.get('/network/:id/explorer/block/:blockId', (req: Request, res: Response) =>{getBlock(req, res)});
+router.get('/network/:id/explorer/transaction/:txId', (req: Request, res: Response) =>{getTransaction(req, res)});
+router.get('/network/:id/explorer/balance/:address', (req: Request, res: Response) =>{getBalance(req, res)});
 
 
 export default router;
