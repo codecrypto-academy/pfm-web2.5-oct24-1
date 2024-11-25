@@ -6,10 +6,11 @@ import { App } from './components/App';
 import { NetworkList } from './components/NetworkList';
 import { NetworkDetails } from './components/NetworkDetails';
 import { AddNetwork } from './components/AddNetwork';
-import { LastBlocks } from './components/operations/LastBlocks';
-import { BlockTransactions } from './components/operations/BlockTransactions';
-import { Transaction } from './components/operations/Transaction';
-import { Address } from './components/operations/Address';
+import { LastBlocks } from './components/explorer/LastBlocks';
+import { BlockTransactions } from './components/explorer/BlockTransactions';
+import { Transaction } from './components/explorer/Transaction';
+import { Address } from './components/explorer/Address';
+import { Explorer } from './components/explorer/Explorer';
 import './index.css';
 
 const queryClient = new QueryClient({
@@ -34,9 +35,11 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/network/:id" element={<NetworkDetails />} />
             <Route path="/addnetwork" element={<AddNetwork />} />
             <Route path="/network/:id/operation/blocks" element={<LastBlocks />} />
-            <Route path="/network/:id/operation/block/:blockId" element={<BlockTransactions />} />
-            <Route path="/network/:id/operation/transaction/:txId" element={<Transaction />} />
-            <Route path="/network/:id/operation/address/:address" element={<Address />} />
+            <Route path="/network/:id/explorer" element={<Explorer />}>
+              <Route path="block/:blockId" element={<BlockTransactions />} />
+              <Route path="transaction/:txId" element={<Transaction />} />
+              <Route path="address/:address" element={<Address />} />
+            </Route>
           </Route>
         </Routes>
       </BrowserRouter>

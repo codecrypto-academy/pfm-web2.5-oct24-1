@@ -85,18 +85,18 @@ export const BlockTransactions: React.FC = () => {
             {block.transactions.map((tx, index) => (
               <tr key={index}>
                 <td className="hash-column">
-                  <Link to={`/network/${id}/operation/transaction/${tx.hash}`}>
+                  <Link to={`/network/${id}/explorer/transaction/${tx.hash}`}>
                     {truncateString(tx.hash)}
                   </Link>
                 </td>
                 <td>
-                  <Link to={`/network/${id}/operation/address/${tx.from}`}>
+                  <Link to={`/network/${id}/explorer/address/${tx.from}`}>
                     {truncateString(tx.from)}
                   </Link>
                 </td>
                 <td>
                   {tx.to ? (
-                    <Link to={`/network/${id}/operation/address/${tx.to}`}>
+                    <Link to={`/network/${id}/explorer/address/${tx.to}`}>
                       {truncateString(tx.to)}
                     </Link>
                   ) : (

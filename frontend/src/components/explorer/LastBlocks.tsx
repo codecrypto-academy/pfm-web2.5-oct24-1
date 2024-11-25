@@ -54,7 +54,7 @@ export const LastBlocks: React.FC = () => {
           {blocks.map((block) => (
             <tr key={block.number}>
               <td>
-                <Link to={`/network/${networkId}/operation/block/${block.number}`}>
+                <Link to={`/network/${networkId}/explorer/block/${block.number}`}>
                   {block.number}
                 </Link>
               </td>

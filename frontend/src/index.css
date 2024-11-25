@@ -83,7 +83,7 @@ form{
     border: 1px solid #ccc;
     border-radius: 8px;
     padding: 16px;
-    background-color: #f9f9f9;
+    background-color: white;
     margin: 16px 0;
     max-width: 800px;
   }
@@ -130,9 +130,9 @@ form{
 .transaction-details {
     padding: 20px;
     max-width: 700px;
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+    border: 1px solid #ccc;
+    border-radius:8px;
+    background-color:white;
   }
   
   .transaction-details h3 {
@@ -169,7 +169,7 @@ form{
     border: 1px solid #ddd;
     padding: 20px;
     border-radius: 8px;
-    background-color: #f9f9f9;
+    background-color: white;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     margin: 20px 0;
     max-width: 800px;
@@ -193,3 +193,88 @@ form{
     color: #000;
   }
   
+  /*Explorer styles*/
+
+  .explorer-container {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    padding: 20px;
+    max-width: 800px;
+    background: #f8f8f8;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+  
+  .explorer-title {
+    font-size: 2.2rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 10px;
+  }
+  
+  .explorer-description {
+    font-size: 1.1rem;
+    color: #777;
+    margin-bottom: 30px;
+    text-align: left;
+    max-width: 600px;
+  }
+  
+  .search-form {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  
+  .search-input {
+    width: 80%;
+    padding: 12px;
+    font-size: 1rem;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.3s ease;
+  }
+  
+  .search-input:focus {
+    border-color: #007bff;
+  }
+  
+  .search-button {
+    width: 18%;
+    padding: 12px;
+    font-size: 1rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .search-button:hover {
+    background-color: #0056b3;
+  }
+  
+  .component-container {
+    width: 100%;
+    padding: 20px;
+  }
+  
+  @media (max-width: 768px) {
+    .search-form {
+      flex-direction: column;
+    }
+  
+    .search-input {
+      width: 100%;
+      margin-bottom: 10px;
+    }
+  
+    .search-button {
+      width: 100%;
+    }
+  }
