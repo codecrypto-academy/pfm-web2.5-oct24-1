@@ -67,7 +67,7 @@ function  getFaucetAddressData(networkId){
 }
 
 export async function getTokens(req: Request, res: Response) {
-    const { networkId, address } = req.params
+    const { id: networkId, address } = req.params
     
     try {
         // get the network
