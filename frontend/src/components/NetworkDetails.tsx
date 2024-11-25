@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { Play, Square, RotateCw, Settings, Trash2 } from "lucide-react";
 import { ToastContainer, useToast } from "../components/Toast/Toast";
+import { NetworkStatusObserver } from "../components/NetworkStatusObserver";
+import { AddNode } from "./AddNode";
 
 interface Network {
   id: string;
@@ -86,7 +88,11 @@ export const NetworkDetails: React.FC = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteType, setDeleteType] = useState<"network" | "node">("network");
   const [nodeToDelete, setNodeToDelete] = useState<string | null>(null);
-  const [isRunning, setIsRunning] = useState(false);
+  const [networkStatus, setNetworkStatus] = useState<"running" | "stopped">(
+    "stopped"
+  );
+  const [isNetworkLoading, setIsNetworkLoading] = useState(false);
+
   const { toasts, showToast, removeToast } = useToast();
 
   const apiUrl = import.meta.env.VITE_API_URL;
@@ -96,13 +102,13 @@ export const NetworkDetails: React.FC = () => {
     fetch(`${apiUrl}/network/${id}`).then((response) => {
       response.json().then((data) => {
         setNetwork(data);
-        setIsRunning(data.status === "running");
       });
     });
   }, [id]);
 
   const startNetwork = async () => {
     setLoadingId("start");
+    setIsNetworkLoading(true);
     try {
       const response = await fetch(`${apiUrl}/network/start/${id}`, {
         method: "POST",
@@ -110,14 +116,16 @@ export const NetworkDetails: React.FC = () => {
       });
       if (response.ok) {
         showToast("Network started successfully.");
-        setIsRunning(true);
+        setNetworkStatus("running");
       } else {
         showToast("Failed to start network.", "error");
       }
     } catch (error) {
       showToast("An error occurred while starting the network.", "error");
+    } finally {
+      setLoadingId(null);
+      setIsNetworkLoading(false);
     }
-    setLoadingId(null);
   };
 
   const stopNetwork = async () => {
@@ -129,7 +137,7 @@ export const NetworkDetails: React.FC = () => {
       });
       if (response.ok) {
         showToast("Network stopped successfully.");
-        setIsRunning(false);
+        setNetworkStatus("stopped");
       } else {
         showToast("Failed to stop network.", "error");
       }
@@ -213,9 +221,17 @@ export const NetworkDetails: React.FC = () => {
     <div className="container mt-4">
       <ToastContainer toasts={toasts} removeToast={removeToast} />
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h3>Network Details</h3>
+        <div className="d-flex align-items-center gap-3">
+          <h3>Network Details</h3>
+          <NetworkStatusObserver
+            networkId={network.id}
+            className="fs-8 px-2 py-1"
+            isLoading={isNetworkLoading}
+            onStatusChange={setNetworkStatus}
+          />
+        </div>
         <div className="d-flex gap-2">
-          {!isRunning ? (
+          {networkStatus === "stopped" ? (
             <button
               onClick={startNetwork}
               disabled={loadingId === "start"}
@@ -302,7 +318,25 @@ export const NetworkDetails: React.FC = () => {
 
       <section className="card">
         <div className="card-body">
-          <h5 className="card-title">Nodes</h5>
+          <div className="d-flex justify-content-between align-items-center mb-3">
+            <h5 className="card-title mb-0">Nodes</h5>
+            {network && (
+              <AddNode
+                networkId={network.id}
+                subnet={network.subnet}
+                onNodeAdded={(newNode) => {
+                  setNetwork((prev) =>
+                    prev
+                      ? {
+                          ...prev,
+                          nodes: [...prev.nodes, newNode],
+                        }
+                      : null
+                  );
+                }}
+              />
+            )}
+          </div>
           <div className="table-responsive">
             <table className="table table-hover mb-0">
               <thead>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Play, Square, RotateCw, Settings, Trash2 } from "lucide-react";
 import { ToastContainer, useToast } from "../components/Toast/Toast";
+import { NetworkStatusObserver } from "../components/NetworkStatusObserver";
 
 interface Network {
   id: string;
@@ -87,17 +88,21 @@ export const NetworkList: React.FC = () => {
   const [networks, setNetworks] = useState<Network[] | null>([]);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [disabledIds, setDisabledIds] = useState<Set<string>>(new Set());
-  const [runningNetworks, setRunningNetworks] = useState<Set<string>>(
-    new Set()
-  );
+  const [networkStatuses, setNetworkStatuses] = useState<
+    Record<string, "running" | "stopped">
+  >({});
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [networkToDelete, setNetworkToDelete] = useState<Network | null>(null);
   const { toasts, showToast, removeToast } = useToast();
+  const [loadingNetworks, setLoadingNetworks] = useState<Set<string>>(
+    new Set()
+  );
 
   const apiUrl = import.meta.env.VITE_API_URL;
 
   const startNetworkCall = async (id: string) => {
     setLoadingId(id);
+    setLoadingNetworks((prev) => new Set([...prev, id]));
     try {
       const response = await fetch(`${apiUrl}/network/start/${id}`, {
         method: "POST",
@@ -107,27 +112,32 @@ export const NetworkList: React.FC = () => {
       });
 
       if (response.ok) {
-        const data = await response.json();
         showToast("Network started successfully.");
-        setRunningNetworks((prev) => new Set([...prev, id]));
-        console.log("Response Data:", data);
+        setNetworkStatuses((prev) => ({
+          ...prev,
+          [id]: "running",
+        }));
       } else {
         showToast("Failed to start network.", "error");
-        console.error("Error:", response.statusText);
       }
     } catch (error) {
       showToast(
         "An error occurred while trying to start the network.",
         "error"
       );
-      console.error("Error:", error);
     } finally {
       setLoadingId(null);
+      setLoadingNetworks((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
     }
   };
 
   const stopNetworkCall = async (id: string) => {
     setLoadingId(id);
+    setLoadingNetworks((prev) => new Set([...prev, id]));
     try {
       const response = await fetch(`${apiUrl}/network/stop/${id}`, {
         method: "POST",
@@ -137,23 +147,24 @@ export const NetworkList: React.FC = () => {
       });
 
       if (response.ok) {
-        const data = await response.json();
         showToast("Network stopped successfully.");
-        setRunningNetworks((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(id);
-          return newSet;
-        });
-        console.log("Response Data:", data);
+        setNetworkStatuses((prev) => ({
+          ...prev,
+          [id]: "stopped",
+        }));
       } else {
         showToast("Failed to stop network.", "error");
-        console.error("Error:", response.statusText);
       }
     } catch (error) {
       showToast("An error occurred while trying to stop the network.", "error");
-      console.error("Error:", error);
     } finally {
       setLoadingId(null);
+
+      setLoadingNetworks((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
     }
   };
   /*
@@ -201,21 +212,20 @@ export const NetworkList: React.FC = () => {
               )
             : []
         );
-        setRunningNetworks((prev) => {
-          const newSet = new Set(prev);
-          newSet.delete(networkToDelete.id);
-          return newSet;
+        // Actualizar networkStatuses eliminando la red borrada
+        setNetworkStatuses((prev) => {
+          const newStatuses = { ...prev };
+          delete newStatuses[networkToDelete.id];
+          return newStatuses;
         });
       } else {
         showToast("Failed to delete network.", "error");
-        console.error("Error:", response.statusText);
       }
     } catch (error) {
       showToast(
         "An error occurred while trying to delete the network.",
         "error"
       );
-      console.error("Error:", error);
     } finally {
       setLoadingId(null);
       setShowDeleteModal(false);
@@ -232,12 +242,12 @@ export const NetworkList: React.FC = () => {
     fetch(`${apiUrl}/networks`).then((response) => {
       response.json().then((data) => {
         setNetworks(data);
-        const running: Set<string> = new Set(
-          data
-            .filter((network: Network) => network.status === "running")
-            .map((network: Network) => network.id)
-        );
-        setRunningNetworks(running);
+        // Inicializar networkStatuses con los estados iniciales
+        const statuses: Record<string, "running" | "stopped"> = {};
+        data.forEach((network: Network) => {
+          statuses[network.id] = network.status || "stopped";
+        });
+        setNetworkStatuses(statuses);
       });
     });
   }, []);
@@ -288,7 +298,7 @@ export const NetworkList: React.FC = () => {
               </thead>
               <tbody>
                 {networks.map((network, index) => {
-                  const isRunning = runningNetworks.has(network.id);
+                  const isRunning = networkStatuses[network.id] === "running";
                   return (
                     <tr key={index}>
                       <td className="align-middle">{network.chainId}</td>
@@ -301,37 +311,28 @@ export const NetworkList: React.FC = () => {
                         </a>
                       </td>
                       <td className="align-middle">
-                        <span
-                          className={`badge ${isRunning ? "bg-success" : "bg-danger"}`}
-                          style={{
-                            fontSize: "0.8rem",
-                            padding: "0.35em 0.65em",
+                        <NetworkStatusObserver
+                          networkId={network.id}
+                          className="fs-8 px-2 py-1"
+                          isLoading={loadingNetworks.has(network.id)}
+                          onStatusChange={(status) => {
+                            setNetworkStatuses((prev) => ({
+                              ...prev,
+                              [network.id]: status,
+                            }));
                           }}
-                        >
-                          {loadingId === network.id
-                            ? "Loading..."
-                            : isRunning
-                              ? "running"
-                              : "stopped"}
-                        </span>
+                        />
                       </td>
                       <td>
                         <div className="d-flex justify-content-center gap-3">
-                          {!isRunning ? (
+                          {networkStatuses[network.id] !== "running" ? (
                             <button
                               onClick={() => startNetworkCall(network.id)}
-                              disabled={
-                                loadingId === network.id ||
-                                disabledIds.has(network.id)
-                              }
+                              disabled={loadingId === network.id}
                               style={{
                                 ...actionButtonStyle,
                                 backgroundColor: "#e7f7ed",
-                                opacity:
-                                  loadingId === network.id ||
-                                  disabledIds.has(network.id)
-                                    ? 0.5
-                                    : 1,
+                                opacity: loadingId === network.id ? 0.5 : 1,
                               }}
                             >
                               <Play size={20} className="text-success" />

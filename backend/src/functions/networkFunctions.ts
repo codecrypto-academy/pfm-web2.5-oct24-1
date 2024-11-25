@@ -477,48 +477,107 @@ function isNode(node: any): node is Node {
         (typeof node.port === 'number' || node.port === null || node.port === undefined);
 }
 
+async function setupNodeDirectory(networkId: string, node: Node): Promise<void> {
+    const networkDir = path.join(NETWORKS_DIR, networkId);
+    const nodeDir = path.join(networkDir, node.name);
+
+    // Crear la estructura base del nodo
+    const directories = [
+        path.join(nodeDir, 'geth'),
+        path.join(nodeDir, 'keystore'),
+        path.join(nodeDir, 'geth', 'chaindata'),
+        path.join(nodeDir, 'geth', 'lightchaindata'),
+        path.join(nodeDir, 'geth', 'nodes'),
+    ];
+
+    // Crear todas las carpetas necesarias
+    for (const dir of directories) {
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+    }
+
+    // Copiar el genesis.json del bootnode
+    const bootnodeGenesisPath = path.join(networkDir, 'bootnode', 'genesis.json');
+    const nodeGenesisPath = path.join(nodeDir, 'genesis.json');
+    fs.copyFileSync(bootnodeGenesisPath, nodeGenesisPath);
+
+    // Si es un nodo minero, configurar archivos adicionales
+    if (node.type === 'miner') {
+        // Copiar password.txt
+        const networkPasswordPath = path.join(networkDir, 'password.txt');
+        const nodePasswordPath = path.join(nodeDir, 'password.txt');
+        fs.copyFileSync(networkPasswordPath, nodePasswordPath);
+    }
+
+    // Crear archivo nodekey vacío (se llenará cuando se inicie el nodo)
+    fs.writeFileSync(path.join(nodeDir, 'nodekey'), '');
+
+    // Crear archivo jwtsecret vacío (se llenará cuando se inicie el nodo)
+    fs.writeFileSync(path.join(nodeDir, 'jwtsecret'), '');
+}
+
 export async function addNode(req: Request, res: Response) {
     const networkId = req.params.id_network;
     const newNode: Node = req.body;
     const docker = new DockerService();
 
     try {
+        // Leer y validar la red existente
         const data = fs.readFileSync(NETWORKS_FILE, 'utf8');
         let networks: Network[] = JSON.parse(data);
-
-        // Encontrar la red por su ID
         const network = networks.find(net => net.id === networkId);
+
         if (!network) {
             return res.status(404).json({ message: 'Red no encontrada' });
         }
 
-        // Validar el nuevo nodo
+        // Validar el formato del nuevo nodo
         if (!isNode(newNode)) {
             return res.status(400).json({ message: 'Formato de nodo inválido' });
         }
 
-        // Agregar el nuevo nodo a la red
-        network.nodes.push(newNode);
-
-        // Actualizar el archivo networks.json
-        fs.writeFileSync(NETWORKS_FILE, JSON.stringify(networks, null, 2));
-
-        // Crear la carpeta del nuevo nodo y generar la cuenta si es un minero
-        const networkDir = path.join(NETWORKS_DIR, networkId);
-        const nodeDir = path.join(networkDir, newNode.name);
-        fs.mkdirSync(nodeDir, { recursive: true });
-
-        if (newNode.type === 'miner') {
-            const passwordPath = path.join(networkDir, 'password.txt');
-            const nodePasswordPath = path.join(nodeDir, 'password.txt');
-            fs.copyFileSync(passwordPath, nodePasswordPath);
-            await docker.createNodeAccount(networkId, newNode.name);
+        // Verificar si ya existe un nodo con el mismo nombre
+        if (network.nodes.some(node => node.name === newNode.name)) {
+            return res.status(400).json({ message: 'Ya existe un nodo con ese nombre' });
         }
 
-        res.status(201).json({ message: 'Nodo agregado correctamente', node: newNode });
+        // Configurar el directorio del nodo y sus archivos
+        await setupNodeDirectory(networkId, newNode);
+
+        // Si es un nodo minero, crear la cuenta
+        if (newNode.type === 'miner') {
+            try {
+                await docker.createNodeAccount(networkId, newNode.name);
+                await docker.initializeGenesisBlock(networkId, newNode.name);
+            } catch (error) {
+                // Limpiar los archivos creados si hay error
+                const nodeDir = path.join(NETWORKS_DIR, networkId, newNode.name);
+                if (fs.existsSync(nodeDir)) {
+                    fs.rmSync(nodeDir, { recursive: true, force: true });
+                }
+                throw new Error(`Error al inicializar el nodo minero: ${error.message}`);
+            }
+        } else {
+            // Para nodos no mineros, solo inicializar el bloque génesis
+            await docker.initializeGenesisBlock(networkId, newNode.name);
+        }
+
+        // Agregar el nodo a la configuración de la red
+        network.nodes.push(newNode);
+        fs.writeFileSync(NETWORKS_FILE, JSON.stringify(networks, null, 2));
+
+        res.status(201).json({
+            message: 'Nodo agregado correctamente',
+            node: newNode
+        });
+
     } catch (error) {
         console.error('Error al agregar el nodo:', error);
-        res.status(500).json({ message: 'Error al agregar el nodo', error: error.message });
+        res.status(500).json({
+            message: 'Error al agregar el nodo',
+            error: error.message
+        });
     }
 }
 
@@ -528,38 +587,54 @@ export async function deleteNodeFromNetwork(req: Request, res: Response) {
     const docker = new DockerService();
 
     try {
+        // Leer el archivo de redes
         const data = fs.readFileSync(NETWORKS_FILE, 'utf8');
         let networks: Network[] = JSON.parse(data);
 
-        // Encontrar la red por su ID
+        // Encontrar la red
         const network = networks.find(net => net.id === networkId);
         if (!network) {
             return res.status(404).json({ message: 'Red no encontrada' });
         }
 
-        // Encontrar el nodo por su nombre
+        // Encontrar el nodo
         const nodeIndex = network.nodes.findIndex(node => node.name === nodeName);
         if (nodeIndex === -1) {
             return res.status(404).json({ message: 'Nodo no encontrado' });
         }
 
-        // Eliminar el nodo del array
-        const [deletedNode] = network.nodes.splice(nodeIndex, 1);
+        // Obtener el nodo antes de eliminarlo
+        const deletedNode = network.nodes[nodeIndex];
 
-        // Actualizar el archivo networks.json
-        fs.writeFileSync(NETWORKS_FILE, JSON.stringify(networks, null, 2));
-
-        // Verificar si existe un contenedor con el nombre del nodo y que esté bajo la misma red
-        const containerName = `${networkId}-${deletedNode.name}`;
+        // Detener y eliminar el contenedor Docker si existe
+        const containerName = `${networkId}-${nodeName}`;
         const containerExists = await docker.containerExistsInNetwork(containerName, networkId);
         if (containerExists) {
-            // Detener el contenedor Docker asociado al nodo
             await docker.removeExistingContainer(containerName);
         }
 
-        res.status(200).json({ message: 'Nodo eliminado correctamente', node: deletedNode });
+        // Eliminar el directorio del nodo
+        const nodeDir = path.join(NETWORKS_DIR, networkId, nodeName);
+        if (fs.existsSync(nodeDir)) {
+            fs.rmSync(nodeDir, { recursive: true, force: true });
+        }
+
+        // Eliminar el nodo del array de nodos
+        network.nodes.splice(nodeIndex, 1);
+
+        // Actualizar el archivo de configuración
+        fs.writeFileSync(NETWORKS_FILE, JSON.stringify(networks, null, 2));
+
+        res.status(200).json({
+            message: 'Nodo eliminado correctamente',
+            node: deletedNode
+        });
+
     } catch (error) {
         console.error('Error al eliminar el nodo:', error);
-        res.status(500).json({ message: 'Error al eliminar el nodo', error: error.message });
+        res.status(500).json({
+            message: 'Error al eliminar el nodo',
+            error: error.message
+        });
     }
 }

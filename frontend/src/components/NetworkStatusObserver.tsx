@@ -1,59 +1,66 @@
+// NetworkStatusObserver.tsx
 import React, { useState, useEffect } from "react";
 
 interface NetworkStatus {
-  blockNumber?: number;
-  status: "running" | "stopped";
+  isRunning: boolean;
 }
 
 interface NetworkStatusObserverProps {
   networkId: string;
   className?: string;
   onStatusChange?: (status: "running" | "stopped") => void;
+  isLoading?: boolean;
 }
 
 export const NetworkStatusObserver: React.FC<NetworkStatusObserverProps> = ({
   networkId,
   className = "",
   onStatusChange,
+  isLoading = false,
 }) => {
   const [status, setStatus] = useState<NetworkStatus | null>(null);
   const apiUrl = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     const checkStatus = async () => {
+      if (isLoading) return;
       try {
-        const response = await fetch(`${apiUrl}/isAlive/${networkId}`);
+        // Actualizar la URL según el endpoint correcto
+        const response = await fetch(`${apiUrl}/network/status/${networkId}`);
+
+        // Si la respuesta no es ok, intentamos obtener el mensaje de error
         if (!response.ok) {
           throw new Error("Network status check failed");
         }
+
         const data = await response.json();
-        const newStatus = data.blockNumber ? "running" : "stopped";
+        console.log("Status response:", data);
 
-        setStatus({
-          blockNumber: data.blockNumber,
-          status: newStatus,
-        });
-
-        // Notificar el cambio de estado al componente padre
-        onStatusChange?.(newStatus);
+        setStatus(data);
+        onStatusChange?.(data.isRunning ? "running" : "stopped");
       } catch (error) {
         console.error("Error checking network status:", error);
-        setStatus({
-          blockNumber: undefined,
-          status: "stopped",
-        });
+        setStatus({ isRunning: false });
         onStatusChange?.("stopped");
       }
     };
 
-    // Primera verificación
-    checkStatus();
-
-    // Verificar cada 5 segundos
     const interval = setInterval(checkStatus, 5000);
+    checkStatus(); // Primera verificación
 
     return () => clearInterval(interval);
-  }, [networkId, onStatusChange]);
+  }, [networkId, onStatusChange, apiUrl, isLoading]);
+
+  if (isLoading) {
+    return (
+      <span className={`badge bg-warning ${className}`}>
+        loading...
+        <div className="spinner-border spinner-border-sm ms-1" role="status">
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </span>
+    );
+  }
 
   if (!status) {
     return (
@@ -63,18 +70,9 @@ export const NetworkStatusObserver: React.FC<NetworkStatusObserverProps> = ({
 
   return (
     <span
-      className={`badge ${status.status === "running" ? "bg-success" : "bg-danger"} ${className}`}
+      className={`badge ${status.isRunning ? "bg-success" : "bg-danger"} ${className}`}
     >
-      {status.status === "running" ? (
-        <>
-          running
-          {status.blockNumber && (
-            <small className="ms-1">#{status.blockNumber}</small>
-          )}
-        </>
-      ) : (
-        "stopped"
-      )}
+      {status.isRunning ? "running" : "stopped"}
     </span>
   );
 };

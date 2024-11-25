@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+// Toast.tsx
+import React, { useEffect } from "react";
 
 interface ToastProps {
   message: string;
@@ -19,11 +20,13 @@ const Toast: React.FC<ToastProps> = ({ message, type, onClose }) => {
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [onClose]);
+  }, [message, onClose]); // Agregado message como dependencia
 
   return (
     <div
-      className={`toast show align-items-center text-white ${type === "success" ? "bg-success" : "bg-danger"}`}
+      className={`toast show align-items-center text-white ${
+        type === "success" ? "bg-success" : "bg-danger"
+      }`}
       role="alert"
       aria-atomic="true"
       style={{
@@ -58,30 +61,41 @@ export const ToastContainer: React.FC<{
           key={toast.id}
           message={toast.message}
           type={toast.type}
-          onClose={() => removeToast(toast.id)}
+          onClose={() => {
+            console.log("Closing toast:", toast.id); // Para debug
+            removeToast(toast.id);
+          }}
         />
       ))}
     </div>
   );
 };
 
-// Hook personalizado para manejar los toasts
 export const useToast = () => {
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [toasts, setToasts] = React.useState<ToastMessage[]>([]);
 
   const showToast = (
     message: string,
     type: "success" | "error" = "success"
   ) => {
+    const id = Date.now();
+    console.log("Creating toast:", id); // Para debug
     const newToast = {
-      id: Date.now(),
+      id,
       message,
       type,
     };
     setToasts((current) => [...current, newToast]);
+
+    // Asegurar que el toast se elimine después de 3 segundos
+    setTimeout(() => {
+      console.log("Auto-removing toast:", id); // Para debug
+      setToasts((current) => current.filter((t) => t.id !== id));
+    }, 3000);
   };
 
   const removeToast = (id: number) => {
+    console.log("Manually removing toast:", id); // Para debug
     setToasts((current) => current.filter((toast) => toast.id !== id));
   };
 
