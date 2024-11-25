@@ -16,7 +16,13 @@ export const Sidebar: React.FC = () => {
   ], [id]);
 
   // Función para determinar si una opción está activa
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    if( location.pathname.includes("/explorer") && path.includes("/explorer") ){
+        return true
+    }
+    
+    return location.pathname === path
+} 
 
   // Abrir automáticamente Operations si se está visualizando una de sus rutas
   useEffect(() => {
