@@ -29,7 +29,7 @@ export const Faucet:React.FC = () => {
         if (!state.account){
             return 'There is no account'    
         }
-        const response = await fetch(`http://localhost:3000//network/${id}/faucet/${state.account}`)
+        const response = await fetch(`http://localhost:3000/network/${id}/faucet/${state.account}`)
         const transaction = await response.json() as object | null
         setTx(transaction)
         setLoading(false)
@@ -44,7 +44,7 @@ export const Faucet:React.FC = () => {
                 }
             </h2>
             <button onClick={async () => handleClick()} disabled={loading}>
-                Ask for funds
+                {loading ? 'Waiting for tx...':'Ask for funds' }
             </button>
             { tx && <p>Response: {JSON.stringify(tx)} </p>}
         </div>

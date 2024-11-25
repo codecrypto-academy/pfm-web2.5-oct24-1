@@ -6,6 +6,7 @@ import { NetworkList } from './components/NetworkList'
 import { NetworkDetails } from './components/NetworkDetails'
 import {AddNetwork} from './components/AddNetwork'
 import './index.css'
+import { Faucet } from './components/Faucet'
 
 
 
@@ -20,6 +21,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/networks" element={<NetworkList></NetworkList>}></Route>
             <Route path="/network/:id" element={<NetworkDetails></NetworkDetails>}></Route>
             <Route path="/addnetwork" element={<AddNetwork></AddNetwork>}></Route>
+            <Route path="/network/:id/faucet/" element={<Faucet></Faucet>}></Route>
         </Route>
       </Routes>
       </BrowserRouter>
