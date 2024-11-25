@@ -84,14 +84,15 @@ export async function getTokens(req: Request, res: Response) {
         // specify transaction details
         const faucetAddress = `0x${faucetAddressData.address}`
         const txDetails = generateTxDetails(address, faucetAddress)
-        console
         // send transaction from the wallet
         const tx = await walletConnection.sendTransaction(txDetails)
-        await tx.wait()
+        const txRecipt = await tx.wait()
         const balance = await provider.getBalance(address)
         // response with  hash
         res.send({
             address,
+            block: txRecipt.blockNumber,
+            txHash:txRecipt.hash,
             amount: AMOUNT,
             balance: ethers.formatUnits(balance),
             date: new Date().toISOString()
