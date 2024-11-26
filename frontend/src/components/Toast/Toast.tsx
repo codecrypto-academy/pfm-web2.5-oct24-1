@@ -14,13 +14,13 @@ interface ToastMessage {
 }
 
 const Toast: React.FC<ToastProps> = ({ message, type, onClose }) => {
-  useEffect(() => {
+/*   useEffect(() => {
     const timer = setTimeout(() => {
       onClose();
     }, 3000);
 
     return () => clearTimeout(timer);
-  }, [message, onClose]); // Agregado message como dependencia
+  }, [message, onClose]);  */// Agregado message como dependencia
 
   return (
     <div
@@ -76,7 +76,8 @@ export const useToast = () => {
 
   const showToast = (
     message: string,
-    type: "success" | "error" = "success"
+    type: "success" | "error" = "success",
+    time: number = 3
   ) => {
     const id = Date.now();
     console.log("Creating toast:", id); // Para debug
@@ -86,12 +87,14 @@ export const useToast = () => {
       type,
     };
     setToasts((current) => [...current, newToast]);
-
-    // Asegurar que el toast se elimine después de 3 segundos
-    setTimeout(() => {
-      console.log("Auto-removing toast:", id); // Para debug
-      setToasts((current) => current.filter((t) => t.id !== id));
-    }, 3000);
+    debugger;
+    if(time > 0 ){
+      // Asegurar que el toast se elimine después de n segundos
+      setTimeout(() => {
+        console.log("Auto-removing toast:", id); // Para debug
+        setToasts((current) => current.filter((t) => t.id !== id));
+      }, time * 1000);
+    }
   };
 
   const removeToast = (id: number) => {
