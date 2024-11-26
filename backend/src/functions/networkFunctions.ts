@@ -1,6 +1,6 @@
 import { Network } from '../types/network';
 import { Request, Response } from 'express';
-import { isNetworkArray, validateNetwork, isNetwork } from '../validations/networkValidations';
+import { isNetworkArray, validateNetwork, isNetwork, getNetFormatError } from '../validations/networkValidations';
 import { GenesisFile, GenesisConfig } from '../types/genesis';
 import fs from 'fs';
 import path, { join } from 'path';
@@ -87,9 +87,10 @@ export function listNetworks(req: Request, res: Response) {
 }
 
 function validateBody(body: any): Network {
-    console.log('New network data: ', JSON.stringify(body, null, 2))
+    console.log('Validating network data: ', JSON.stringify(body, null, 2))
     if (!isNetwork(body)) {
-        throw new Error('Invalid network format')
+        const errorFormat = getNetFormatError(body)
+        throw new Error("Format error: "+ errorFormat)
     }
     return body as Network
 }
@@ -105,7 +106,16 @@ export async function createNetwork(req: Request, res: Response) {
         console.log('\n=== STARTING NETWORK CREATION PROCESS ===');
 
         // 1. Validar formato básico de la nueva red
-        newNetwork = validateBody(req.body);
+        //newNetwork = validateBody(req.body);
+        if(!isNetwork(req.body)){
+            const errorFormat = getNetFormatError(req.body)
+            return res.status(400).json({
+                error: 'Network format  failed',
+                details: errorFormat
+            });
+        }else{
+            newNetwork = req.body
+        }
 
         // 2. Asegurarse de que el directorio data existe
         const dataDir = path.join(process.cwd(), 'data');
@@ -137,9 +147,9 @@ export async function createNetwork(req: Request, res: Response) {
         }
 
         // 4. Validaciones
-        if (!isNetwork(newNetwork)) {
+/*         if (!isNetwork(newNetwork)) {
             throw new Error('Invalid network format');
-        }
+        } */
 
         const validationErrors = validateNetwork(newNetwork, existingNetworks);
         if (validationErrors.length > 0) {
