@@ -1,19 +1,16 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Route, Routes  } from 'react-router-dom'
-import {App} from './components/App'
-import { NetworkList } from './components/NetworkList'
-import { NetworkDetails } from './components/NetworkDetails'
-import {AddNetwork} from './components/AddNetwork'
-import './index.css'
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { App } from "./components/App";
+import { NetworkDetails } from "./components/NetworkDetails";
+import { AddNetwork } from "./components/AddNetwork";
+import "./index.css";
+import { NetworkList } from "./components/NetworkList";
 import { Faucet } from './components/Faucet'
 
-
-
-
-createRoot(document.getElementById('root')!).render(
+createRoot(document.getElementById("root")!).render(
   <StrictMode>
-      <BrowserRouter>
+    <BrowserRouter>
       <Routes>
         <Route path="/" element= {<App></App>}>
             <Route index element={<NetworkList></NetworkList>} />
@@ -24,6 +21,6 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/network/:id/faucet/" element={<Faucet></Faucet>}></Route>
         </Route>
       </Routes>
-      </BrowserRouter>
-  </StrictMode>,
-)
+    </BrowserRouter>
+  </StrictMode>
+);

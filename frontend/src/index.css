@@ -3,8 +3,9 @@ header {
 }
 
 
-footer{
-    margin-top: auto; /* Coloca el footer al final del contenido de main-content */
+footer {
+    margin-top: auto;
+    /* Coloca el footer al final del contenido de main-content */
     background-color: #f1f1f1;
     padding: 10px;
     text-align: center;
@@ -18,13 +19,15 @@ footer{
 
 .content-layout {
     display: flex;
-    flex: 1; /* Ocupa el espacio restante después del header */
+    flex: 1;
+    /* Ocupa el espacio restante después del header */
 }
 
 .main-content {
     display: flex;
     flex-direction: column;
-    flex: 1; /* Ocupar el espacio restante de la ventana */
+    flex: 1;
+    /* Ocupar el espacio restante de la ventana */
     padding: 20px;
     overflow-y: auto;
     background-color: #ffffff;
@@ -33,11 +36,15 @@ footer{
 
 .sidebar {
     width: 220px;
-    height: 99%; /* Ocupar todo el alto de la ventana */
-    background-color: #3c4043; /* Color ligeramente más claro para diferenciar del header */
+    height: 99%;
+    /* Ocupar todo el alto de la ventana */
+    background-color: #3c4043;
+    /* Color ligeramente más claro para diferenciar del header */
     color: #fff;
-    padding-top: 20px; /* Espacio en la parte superior */
-    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1); /* Sombra para dar separación del contenido */
+    padding-top: 20px;
+    /* Espacio en la parte superior */
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    /* Sombra para dar separación del contenido */
 }
 
 .sidebar ul {
@@ -49,30 +56,46 @@ footer{
 .sidebar li {
     margin: 10px 0;
     text-align: left;
-    border-bottom: 2px solid #495057; /* Línea de separación más oscura */
-    padding: 5px 0; /* Espacio adicional en cada elemento */
+    border-bottom: 2px solid #495057;
+    /* Línea de separación más oscura */
+    padding: 5px 0;
+    /* Espacio adicional en cada elemento */
 }
 
 .sidebar a {
-    color: #e9ecef; /* Color de texto claro */
+    color: #e9ecef;
+    /* Color de texto claro */
     text-decoration: none;
     font-weight: 500;
     display: block;
-    padding: 10px 15px; /* Espaciado adicional para mejor interacción */
-    border-radius: 8px; /* Bordes más redondeados en los enlaces */
-    transition: background-color 0.2s ease; /* Animación suave en el hover */
+    padding: 10px 15px;
+    /* Espaciado adicional para mejor interacción */
+    border-radius: 8px;
+    /* Bordes más redondeados en los enlaces */
+    transition: background-color 0.2s ease;
+    /* Animación suave en el hover */
 }
 
 .sidebar a:hover {
-    background-color: #4b5259; /* Fondo en hover que combina con el color del sidebar */
-    color: #ffffff; /* Texto blanco para mayor contraste en hover */
+    background-color: #4b5259;
+    /* Fondo en hover que combina con el color del sidebar */
+    color: #ffffff;
+    /* Texto blanco para mayor contraste en hover */
 }
 
 
-.sidebar .sidebar-submenu{
+.sidebar .sidebar-submenu {
     padding: 16px;
 }
 
-form{
+form {
     width: 80%
+}
+
+.button-play {
+    color: green;
+}
+
+.button-stop {
+    color: red;
 }
