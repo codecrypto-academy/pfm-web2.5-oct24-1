@@ -12,6 +12,7 @@ import { Transaction } from './components/explorer/Transaction';
 import { Address } from './components/explorer/Address';
 import { Explorer } from './components/explorer/Explorer';
 import './index.css';
+import { Faucet } from './components/Faucet'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -35,6 +36,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/network/:id" element={<NetworkDetails />} />
             <Route path="/addnetwork" element={<AddNetwork />} />
             <Route path="/network/:id/operation/blocks" element={<LastBlocks />} />
+            <Route path="/network/:id/faucet/" element={<Faucet></Faucet>} />
             <Route path="/network/:id/explorer" element={<Explorer />}>
               <Route path="block/:blockId" element={<BlockTransactions />} />
               <Route path="transaction/:txId" element={<Transaction />} />

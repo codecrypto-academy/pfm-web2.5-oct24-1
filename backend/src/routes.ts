@@ -1,5 +1,6 @@
 import express, { Request, Response, Router } from 'express'
 import { networkDetails, createNetwork, listNetworks, getNetworkStatus, startNetwork, stopNetwork, deleteNetwork, addNode, deleteNodeFromNetwork } from './functions/networkFunctions'
+import { getTokens } from './functions/faucetFunctions'
 import { getLastBlocks, getBlock, getTransaction, getBalance} from  './functions/explorerFunctions';
 
 const router: Router = express.Router();
@@ -23,5 +24,8 @@ router.get('/network/:id/explorer/block/:blockId', (req: Request, res: Response)
 router.get('/network/:id/explorer/transaction/:txId', (req: Request, res: Response) =>{getTransaction(req, res)});
 router.get('/network/:id/explorer/balance/:address', (req: Request, res: Response) =>{getBalance(req, res)});
 
+
+// Faucet endpoint
+router.get('/network/:id/faucet/:address', (req: Request, res: Response) => { getTokens(req, res) })
 
 export default router;

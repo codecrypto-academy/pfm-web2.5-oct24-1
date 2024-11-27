@@ -1,39 +1,51 @@
-import Docker, { Config } from 'dockerode';
-import fs from 'fs';
-import path from 'path';
-import { Node } from '../types/node';
-import { Network } from '../types/network';
-import { CommandBuilder } from './CommandBuilder';
+import Docker, { Config } from 'dockerode'
+import fs from 'fs'
+import path from 'path'
+import { Node } from '../types/node'
+import { Network } from '../types/network'
+import { CommandBuilder } from './CommandBuilder'
 
 export class DockerService {
     private docker: Docker;
     private readonly NETWORKS_DIR: string;
-    private readonly GETH_VERSION = 'v1.13.15';
+    private readonly GETH_VERSION = 'v1.13.15'
     private readonly GETH_ALLTOOLS_VERSION = 'alltools-v1.13.15'
-    private readonly GETH_IMAGE = 'ethereum/client-go';
+    private readonly GETH_IMAGE = 'ethereum/client-go'
 
     constructor() {
-        this.docker = new Docker();
-        this.NETWORKS_DIR = path.join(process.cwd(), 'networks');
+        this.docker = new Docker()
+        this.NETWORKS_DIR = path.join(process.cwd(), 'networks')
     }
 
-    async pullGethImage(): Promise<void> {
-        const imageTag = `${this.GETH_IMAGE}:${this.GETH_VERSION}`;
-        console.log(`Pulling Geth ${this.GETH_IMAGE} ${this.GETH_VERSION}...`);
+    async pullGethImage(gethVersion): Promise<void> {
+        const imageTag = `${this.GETH_IMAGE}:${gethVersion}`
+        console.log(`Checking for Geth image: ${imageTag}...`)
         try {
+            // Mirar si la imagen esta ya presente
+            const images = await this.docker.listImages()
+            const imageExists = images.some((image) => image.RepoTags && image.RepoTags.includes(imageTag))
+            if (imageExists) {
+                console.log(`Image ${imageTag} is already present locally.`)
+                return
+            }
+
+            console.log(`Image not found locally. Pulling Geth ${imageTag}...`)
+
             await new Promise((resolve, reject) => {
-                this.docker.pull(imageTag, (error: any, stream: any) => {
+            this.docker.pull(imageTag, (error:any, stream: any) => {
+                if (error) {
+                    return reject(error)
+                }
+                this.docker.modem.followProgress(stream, (error:any, output:any) => {
                     if (error) {
-                        return reject(error);
+                        return reject(error)
                     }
-                    this.docker.modem.followProgress(stream, (error: any, output: any) => {
-                        if (error) {
-                            return reject(error);
-                        }
-                        resolve(output);
-                    });
-                });
-            });
+                    resolve(output)
+                })
+            })
+        })
+
+        console.log(`Successfully pulled Geth image: ${imageTag}`)
         } catch (error) {
             throw new Error(`Failed to pull Geth image: ${error.message}`);
         }
@@ -177,8 +189,8 @@ export class DockerService {
             // wait for the container to stop
             await container.wait()
             console.log(`${nodeName} account created`)
-            if (accountAddress) {
-                console.log(`${nodeName} addres: ${accountAddress}`)
+            if(accountAddress) {
+                console.log(`${nodeName} address: ${accountAddress}`)
                 return accountAddress
             } else {
                 throw new Error('Failed to extract account addres from logs')
@@ -224,7 +236,7 @@ export class DockerService {
         }
     }
 
-    async initializeBootnodeKeys(networkId: string) {
+    private async initializeBootnodeKeys(networkId: string) {
         const bootnodeDir = path.join(this.NETWORKS_DIR, networkId, 'bootnode')
         const containerName = `${networkId}-bootnode`
         const imageTag = `${this.GETH_IMAGE}:${this.GETH_ALLTOOLS_VERSION}`
@@ -267,11 +279,14 @@ export class DockerService {
         }
     }
 
-    async initializeBootnode(networkId: string): Promise<void> {
+    async initializeBootnode(networkId: string): Promise<string> {
+        await this.pullGethImage(this.GETH_VERSION)
+        await this.pullGethImage(this.GETH_ALLTOOLS_VERSION)
         try {
-            await this.createNodeAccount(networkId, 'bootnode')
+            const address = await this.createNodeAccount(networkId, 'bootnode')
             await this.initializeBootnodeKeys(networkId)
             console.log('Bootnode initialized successfully')
+            return address
         } catch (error) {
             throw new Error(`Error initializing bootnode: ${error.message}`)
         }
@@ -322,7 +337,7 @@ export class DockerService {
         }
     }
 
-    public getNodeAddress(nodeDir: string): string {
+    private getNodeAddress(nodeDir: string): string {
         try {
             const folderAddressPath = path.join(nodeDir, 'keystore')
             const files = fs.readdirSync(folderAddressPath)
@@ -430,7 +445,8 @@ export class DockerService {
             console.log(`Starting network ${network.id}...`);
 
             // 1. Asegurarse de que la imagen de Geth está disponible
-            await this.pullGethImage();
+            await this.pullGethImage(this.GETH_ALLTOOLS_VERSION);
+            await this.pullGethImage(this.GETH_VERSION)
 
             // 2. Crear la red Docker
             await this.createDockerNetwork(network.id, network.subnet);
