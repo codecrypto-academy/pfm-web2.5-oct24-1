@@ -207,7 +207,7 @@ export const AddNetwork: React.FC = () => {
       </div>
 
       <div className="mb-3">
-        <label htmlFor="">IP Boot Node</label>
+        <label htmlFor="">IP Boot node</label>
         <div className="input-group">
           <span className="input-group-text">{fixedIPPart}</span>
           <input
@@ -228,28 +228,32 @@ export const AddNetwork: React.FC = () => {
         <h5>Allocations</h5>
         {allocFields.map((field, index) => (
           <div key={field.id} className="mb-2">
-              <button
-              type="button"
-              className="btn btn-outline-danger mt-2"
-              onClick={() => removeAlloc(index)} >
-              Remove
-              </button>
-            <div className="d-flex flex-column">
-              <input
-                type="text"
-                {...register(`alloc.${index}.address`, {
-                  required: "Address is required",
-                  validate: (value) =>
-                      isAddress(value) || "Invalid Ethereum address"
-                })}
-                placeholder="0x3d32324..."
-                className={`form-control me-2 ${errors.alloc?.[index]?.address ? "is-invalid" : ""}`}
-              />
-              {errors.alloc?.[index]?.address && (
-                <p className="text-danger">{errors.alloc[index].address.message}</p>
-              )}
-            </div>
+            <label htmlFor="">Address</label>
+             <div className="d-flex justify-content-between">
+                  <input
+                    type="text"
+                    {...register(`alloc.${index}.address`, {
+                      required: "Address is required",
+                      validate: (value) =>
+                          isAddress(value) || "Invalid Ethereum address"
+                    })}
+                    placeholder="0x3d32324..."
+                    className={`form-control me-2 ${errors.alloc?.[index]?.address ? "is-invalid" : ""}`}
+                  />
+                 
+
+                <button
+                  type="button"
+                  className="btn btn-outline-danger ms-2 ml-auto"
+                  onClick={() => removeAlloc(index)}>
+                  <i className="bi bi-trash"></i> {/* Ícono de la papelera en Bootstrap Icons */}
+                </button>
+             </div>
+             {errors.alloc?.[index]?.address && (
+                    <p className="text-danger">{errors.alloc[index].address.message}</p>
+                  )}
             
+            <label htmlFor="">Amount</label>
             <div className="d-flex flex-column">
               <input
                 type="number"
@@ -266,13 +270,12 @@ export const AddNetwork: React.FC = () => {
             </div>
           </div>
         ))}
-        <button
-          type="button"
-          className="btn btn-outline-secondary"
-          onClick={() => addAlloc({ address: "", value: 0 })}
-        >
-          Add Alloc
-        </button>
+        <span
+          className="fw-bold fs-6 d-flex align-items-center cursor-pointer"
+          onClick={() => addAlloc({ type: "" })} // Ajusta según tus datos iniciales para agregar un nodo
+          style={{ cursor: "pointer" }}>
+          <i className="bi bi-plus me-2"></i> Add Alloc
+        </span>
       </div>
 
       {/* Section Nodes */}
@@ -280,26 +283,32 @@ export const AddNetwork: React.FC = () => {
         <h5>Nodes</h5>
         {nodeFields.map((field, index) => (
           <div key={field.id} className="mb-4">
-            <button
-              type="button"
-              className="btn btn-outline-danger mt-2"
-              onClick={() => removeNode(index)} >
-              Remove
-              </button>
-            <select
-              {...register(`nodes.${index}.type`, {
-                required: "Type is required",
-              })}
-              className={`form-control mb-1 ${errors.nodes?.[index]?.type ? "is-invalid" : ""}`}
-            >
-              <option value="">Select Type</option>
-              <option value="miner">Miner</option>
-              <option value="rpc">RPC</option>
-              <option value="normal">Normal</option>
-            </select>
+            <label htmlFor="">Node type</label>
+            <div className="d-flex justify-content-between">
+                
+                <select
+                  {...register(`nodes.${index}.type`, {
+                    required: "Type is required",
+                  })}
+                  className={`form-control mb-1 ${errors.nodes?.[index]?.type ? "is-invalid" : ""}`}
+                >
+                  <option value="">Select type</option>
+                  <option value="miner">Miner</option>
+                  <option value="rpc">RPC</option>
+                  <option value="normal">Normal</option>
+                </select>
+                <button
+                  type="button"
+                  className="btn btn-outline-danger ms-2 ml-auto"
+                  onClick={() => removeNode(index)}>
+                  <i className="bi bi-trash"></i> {/* Ícono de la papelera en Bootstrap Icons */}
+                </button>
+            </div>
+            
             {errors.nodes?.[index]?.type && (
                 <p className="text-danger">{errors.nodes?.[index]?.type?.message}</p>
               )}
+            <label htmlFor="">Name</label>
             <input
               {...register(`nodes.${index}.name`, {
                 required: "Name is required",
@@ -310,6 +319,7 @@ export const AddNetwork: React.FC = () => {
              {errors.nodes?.[index]?.name && (
                 <p className="text-danger">{errors.nodes?.[index]?.name?.message}</p>
               )}
+              <label htmlFor="">IP Node</label>
             <div className="input-group">
               <span className="input-group-text">{fixedIPPart}</span>
               <input
@@ -337,13 +347,12 @@ export const AddNetwork: React.FC = () => {
           </div>
         ))}
         {errors.nodes && <p className="text-danger">{errors.nodes.message}</p>}
-        <button
-          type="button"
-          className="btn btn-outline-secondary"
-          onClick={() => addNode({ type: "", name: "", ip: "", port: null })}
-        >
-          Add Node
-        </button>
+        <span
+          className="fw-bold fs-6 d-flex align-items-center cursor-pointer"
+          onClick={() => addNode({ type: "" })} // Ajusta según tus datos iniciales para agregar un nodo
+          style={{ cursor: "pointer" }}>
+          <i className="bi bi-plus me-2"></i> Add Node
+        </span>
       </div>
 
       <button className="btn btn-secondary" type="submit">
