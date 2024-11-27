@@ -3,6 +3,7 @@ import { Network } from "../../../backend/src/types/network";
 import { useForm, SubmitHandler, useFieldArray } from "react-hook-form";
 import { ToastContainer, useToast } from "../components/Toast/Toast";
 
+
 const isValidSubnet = (subnet: string): boolean => {
   const subnetRegex = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\/(0|8|16|24)$/;
   const match = subnet.match(subnetRegex);
@@ -60,6 +61,11 @@ const validateIPBootNode = (ipBootNode: string, subnet: string): string | true =
   }
 
   return true;
+};
+
+const isAddress = (value:string) => {
+  const regex = /^0x[a-fA-F0-9]{40}$/; // Patrón para direcciones Ethereum
+  return regex.test(value);
 };
 
 export const AddNetwork: React.FC = () => {
@@ -222,25 +228,38 @@ export const AddNetwork: React.FC = () => {
         <h5>Allocations</h5>
         {allocFields.map((field, index) => (
           <div key={field.id} className="mb-2">
-            <input
-              type="text"
-              {...register(`alloc.${index}.address`, {
-                required: "Address is required",
-              })}
-              placeholder="0x3d32324..."
-              className={`form-control me-2 ${errors.alloc?.[index]?.address ? "is-invalid" : ""}`}
-            />
-            <input
-              type="number"
-              {...register(`alloc.${index}.value`, {
-                required: "Value is required",
-              })}
-              placeholder="100000"
-              className={`form-control me-2 ${errors.alloc?.[index]?.value ? "is-invalid" : ""}`}
-            />
+            <div className="d-flex flex-column">
+              <input
+                type="text"
+                {...register(`alloc.${index}.address`, {
+                  required: "Address is required",
+                  validate: (value) =>
+                      isAddress(value) || "Invalid Ethereum address"
+                })}
+                placeholder="0x3d32324..."
+                className={`form-control me-2 ${errors.alloc?.[index]?.address ? "is-invalid" : ""}`}
+              />
+              {errors.alloc?.[index]?.address && (
+                <p className="text-danger">{errors.alloc[index].address.message}</p>
+              )}
+            </div>
+            
+            <div className="d-flex flex-column">
+              <input
+                type="number"
+                {...register(`alloc.${index}.value`, {
+                  required: "Value is required",
+                  validate: (value) => value > 1000 || "Value must be greater than 1000"
+                })}
+                placeholder="100000"
+                className={`form-control me-2 ${errors.alloc?.[index]?.value ? "is-invalid" : ""}`}
+              />
+              {errors.alloc?.[index]?.value && (
+                <p className="text-danger">{errors.alloc[index].value.message}</p>
+              )}
+            </div>
           </div>
         ))}
-        {errors.alloc && <p className="text-danger">{errors.alloc.message}</p>}
         <button
           type="button"
           className="btn btn-outline-secondary"
