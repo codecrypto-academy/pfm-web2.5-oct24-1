@@ -76,6 +76,7 @@ export const AddNetwork: React.FC = () => {
     formState: { errors },
     setError,
     watch,
+    formState 
   } = useForm<Network>();
   const apiURL = import.meta.env.VITE_API_URL;
   const { toasts, showToast, removeToast } = useToast();
@@ -99,6 +100,61 @@ export const AddNetwork: React.FC = () => {
       ...nodeEntry,
       port: nodeEntry.port !== null ? Number(nodeEntry.port) : null, // Convert port to number if not null
     }));
+
+     // Generar IP completa para ipBootNode
+  if (data.subnet && data.ipBootNode) {
+    const [subnetBase, mask] = data.subnet.split("/");
+    const subnetParts = subnetBase.split(".");
+    const ipParts = data.ipBootNode.split(".");
+
+    // Reconstruir la IP completa según la máscara de subred
+    switch (parseInt(mask, 10)) {
+      case 8:
+        data.ipBootNode = `${subnetParts[0]}.${ipParts.join(".")}`;
+        break;
+      case 16:
+        data.ipBootNode = `${subnetParts[0]}.${subnetParts[1]}.${ipParts.join(".")}`;
+        break;
+      case 24:
+        data.ipBootNode = `${subnetParts[0]}.${subnetParts[1]}.${subnetParts[2]}.${ipParts[0]}`;
+        break;
+      default:
+        console.error("Invalid subnet mask. Unable to reconstruct IP Boot Node.");
+        return;
+    }
+  }else {
+    console.error("Subnet or IP Boot Node is missing. Unable to reconstruct IP Boot Node.");
+    return;
+  }
+  
+  // Generar IP completa para ip de Nodes
+  if (data.subnet && data.nodes) {
+    const [subnetBase, mask] = data.subnet.split("/");
+    const subnetParts = subnetBase.split(".");
+  
+    data.nodes = Object.values(data.nodes).map((node) => {
+      if (node.ip) {
+        const ipParts = node.ip.split(".");
+        switch (parseInt(mask, 10)) {
+          case 8:
+            node.ip = `${subnetParts[0]}.${ipParts.join(".")}`;
+            break;
+          case 16:
+            node.ip = `${subnetParts[0]}.${subnetParts[1]}.${ipParts.join(".")}`;
+            break;
+          case 24:
+            node.ip = `${subnetParts[0]}.${subnetParts[1]}.${subnetParts[2]}.${ipParts[0]}`;
+            break;
+          default:
+            console.error(`Invalid subnet mask. Unable to reconstruct IP for node ${node.name}.`);
+        }
+      }
+      return node;
+    });
+  } else {
+    console.error("Subnet or nodes are missing. Unable to reconstruct IPs for miner nodes.");
+    return;
+  }
 
     console.log(data);
 
@@ -349,14 +405,25 @@ export const AddNetwork: React.FC = () => {
         {errors.nodes && <p className="text-danger">{errors.nodes.message}</p>}
         <span
           className="fw-bold fs-6 d-flex align-items-center cursor-pointer"
-          onClick={() => addNode({ type: "" })} // Ajusta según tus datos iniciales para agregar un nodo
+          onClick={() => addNode({ type: "", name:"", ip:"", port: null })} // Ajusta según tus datos iniciales para agregar un nodo
           style={{ cursor: "pointer" }}>
           <i className="bi bi-plus me-2"></i> Add Node
         </span>
       </div>
 
-      <button className="btn btn-secondary" type="submit">
-        Add Network
+      <button className="btn btn-secondary" type="submit" disabled={formState.isSubmitting}>
+        {formState.isSubmitting ? (
+          <>
+            <span
+              className="spinner-border spinner-border-sm me-2"
+              role="status"
+              aria-hidden="true"
+            ></span>
+            Loading...
+          </>
+        ) : (
+          "Add Network"
+        )}
       </button>
     </form>
   </div>

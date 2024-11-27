@@ -87,7 +87,6 @@ export const useToast = () => {
       type,
     };
     setToasts((current) => [...current, newToast]);
-    debugger;
     if(time > 0 ){
       // Asegurar que el toast se elimine después de n segundos
       setTimeout(() => {
