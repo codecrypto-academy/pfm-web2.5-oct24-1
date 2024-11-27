@@ -18,7 +18,8 @@
     "dockerode": "^4.0.2",
     "ethers": "^6.13.4",
     "express": "^4.21.1",
-    "web3": "^4.15.0"
+    "web3": "^4.15.0",
+    "web3-validator": "^2.0.6"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
