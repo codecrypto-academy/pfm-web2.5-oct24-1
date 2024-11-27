@@ -3,6 +3,24 @@ import { Network } from "../../../backend/src/types/network";
 import { useForm, SubmitHandler, useFieldArray } from "react-hook-form";
 import { ToastContainer, useToast } from "../components/Toast/Toast";
 
+const isValidSubnet = (subnet: string): boolean => {
+  const subnetRegex = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})\/(0|8|16|24)$/;
+  const match = subnet.match(subnetRegex);
+  if (!match) return false;
+
+  const octets = match.slice(1, 5).map(Number);
+  return octets.every((octet) => octet >= 0 && octet <= 255);
+};
+
+ // Helper function to extract fixed part of the subnet based on the mask
+ const getFixedIPPart = (subnet: string) => {
+  if (!subnet) return "";
+  const [ip, mask] = subnet.split("/");
+  const octets = ip.split(".");
+  const fixedOctets = parseInt(mask) / 8;
+  return octets.slice(0, fixedOctets).join(".") + ".";
+};
+
 export const AddNetwork: React.FC = () => {
   const {
     register,
@@ -14,6 +32,11 @@ export const AddNetwork: React.FC = () => {
   } = useForm<Network>();
   const apiURL = import.meta.env.VITE_API_URL;
   const { toasts, showToast, removeToast } = useToast();
+  const subnet = watch("subnet");
+  const ipBootNode = watch("ipBootNode");
+
+  const fixedIPPart = getFixedIPPart(subnet);
+
   const onSubmit: SubmitHandler<Network> = async (data) => {
     // convert chainId to number
     data.chainId = data.chainId ? Number(data.chainId) : 0;
@@ -120,9 +143,17 @@ export const AddNetwork: React.FC = () => {
       <div className="mb-3">
         <label htmlFor="">Subnet</label>
         <input
-          {...register("subnet", { required: "Subnet is required" })}
+          {...register("subnet", { 
+            required: "Subnet is required",
+            validate: (value) => {
+              if (!isValidSubnet(value)) {
+                return "Invalid subnet format. Expected format: x.x.x.x/octal(8,16,24).";
+              }
+              return true;
+            }
+          })}
           type="text"
-          placeholder="x.x.x.0/24"
+          placeholder="e.g., 192.168.0.0/24"
           className={`form-control ${errors.subnet ? "is-invalid" : ""}`}
         />
         {errors.subnet && <p className="text-danger">{errors.subnet.message}</p>}
@@ -130,10 +161,18 @@ export const AddNetwork: React.FC = () => {
 
       <div className="mb-3">
         <label htmlFor="">IP Boot Node</label>
+        <span className="input-group-text">{fixedIPPart}</span>
         <input
-          {...register("ipBootNode", { required: "Ip Boot Node is required" })}
+          {...register("ipBootNode", { 
+            required: "Ip Boot Node is required",
+          validate:{
+              range: (value) =>
+                (parseInt(value) >= 0 && parseInt(value) <= 255) ||
+                  "Last octet must be between 0 and 255",
+                }
+          })}
           type="text"
-          placeholder="x.x.x.10"
+          placeholder="[0-255]}"
           className={`form-control ${errors.ipBootNode ? "is-invalid" : ""}`}
         />
         {errors.ipBootNode && <p className="text-danger">{errors.ipBootNode.message}</p>}
