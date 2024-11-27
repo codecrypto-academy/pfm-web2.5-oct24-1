@@ -34,7 +34,7 @@ export const NetworkStatusObserver: React.FC<NetworkStatusObserverProps> = ({
         }
 
         const data = await response.json();
-        console.log("Status response:", data);
+        //console.log("Status response:", data);
 
         setStatus(data);
         onStatusChange?.(data.isRunning ? "running" : "stopped");
@@ -45,8 +45,7 @@ export const NetworkStatusObserver: React.FC<NetworkStatusObserverProps> = ({
       }
     };
 
-    const interval = setInterval(checkStatus, 5000);
-    checkStatus(); // Primera verificación
+    const interval = setInterval(checkStatus, 3000);
 
     return () => clearInterval(interval);
   }, [networkId, onStatusChange, apiUrl, isLoading]);
