@@ -34,8 +34,6 @@ export const NetworkStatusObserver: React.FC<NetworkStatusObserverProps> = ({
         }
 
         const data = await response.json();
-        console.log("Status response:", data);
-
         setStatus(data);
         onStatusChange?.(data.isRunning ? "running" : "stopped");
       } catch (error) {

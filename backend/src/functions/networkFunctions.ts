@@ -321,6 +321,97 @@ export function networkDetails(req: Request, res: Response) {
     }
 }
 
+export async function editNetwork(req: Request, res: Response) {
+    const networkId = req.params.id;
+    const docker = new DockerService();
+
+    try {
+        // 1. Leer el archivo de redes
+        const data = fs.readFileSync(NETWORKS_FILE, 'utf8');
+        let networks: Network[] = JSON.parse(data);
+
+        // 2. Encontrar la red a editar
+        const networkIndex = networks.findIndex(net => net.id === networkId);
+        if (networkIndex === -1) {
+            return res.status(404).json({
+                message: 'Red no encontrada'
+            });
+        }
+
+        const currentNetwork = networks[networkIndex];
+        const updatedNetwork = req.body;
+
+        // 3. Validar el formato de la red actualizada
+        if (!isNetwork(updatedNetwork)) {
+            return res.status(400).json({
+                message: 'Formato de red inválido'
+            });
+        }
+
+        // 4. Validar que no se esté intentando cambiar el ID
+        if (updatedNetwork.id !== networkId) {
+            return res.status(400).json({
+                message: 'No se puede modificar el ID de la red'
+            });
+        }
+
+        // 5. Realizar validaciones específicas
+        const validationErrors = validateNetwork(updatedNetwork,
+            networks.filter((_, index) => index !== networkIndex)
+        );
+
+        if (validationErrors.length > 0) {
+            return res.status(400).json({
+                error: 'Validation failed',
+                details: validationErrors
+            });
+        }
+
+        // 6. Verificar si la red está en ejecución
+        let isRunning = false;
+        for (const node of currentNetwork.nodes) {
+            const containerName = `${networkId}-${node.name}`;
+            const containerExists = await docker.containerExistsInNetwork(containerName, networkId);
+            if (containerExists) {
+                const containerInfo = await docker.getContainerInfo(containerName);
+                if (containerInfo.State.Running) {
+                    isRunning = true;
+                    break;
+                }
+            }
+        }
+
+        if (isRunning) {
+            return res.status(400).json({
+                message: 'No se puede editar una red en ejecución. Detenga la red primero.'
+            });
+        }
+
+        // 7. Actualizar la red
+        networks[networkIndex] = {
+            ...currentNetwork,
+            ...updatedNetwork,
+            id: networkId // Asegurar que el ID no cambie
+        };
+
+        // 8. Guardar los cambios
+        fs.writeFileSync(NETWORKS_FILE, JSON.stringify(networks, null, 2));
+
+        // 9. Enviar respuesta
+        res.status(200).json({
+            message: 'Red actualizada correctamente',
+            network: networks[networkIndex]
+        });
+
+    } catch (error) {
+        console.error('Error al editar la red:', error);
+        res.status(500).json({
+            message: 'Error al editar la red',
+            error: error.message
+        });
+    }
+}
+
 export async function getNetworkStatus(req: Request, res: Response) {
     const networkId = req.params.id;
     const docker = new DockerService();

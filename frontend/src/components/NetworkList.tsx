@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { Play, Square, RotateCw, Settings, Trash2 } from "lucide-react";
+import { Play, Square, RotateCw, Trash2, DollarSign } from "lucide-react";
 import { ToastContainer, useToast } from "../components/Toast/Toast";
 import { NetworkStatusObserver } from "../components/NetworkStatusObserver";
+import { NetworkSettings } from "./NetworkSettings";
 
 interface Network {
   id: string;
@@ -167,26 +168,59 @@ export const NetworkList: React.FC = () => {
       });
     }
   };
-  /*
-  const startNetwork = async () => {
-    setLoadingId("start");
+
+  // Nueva función restartNetwork
+  const restartNetwork = async (id: string) => {
+    setLoadingId(id);
+    setLoadingNetworks((prev) => new Set([...prev, id]));
+
     try {
-      const response = await fetch(`${apiUrl}/network/${id}/start`, {
+      // Primero detener la red
+      const stopResponse = await fetch(`${apiUrl}/network/stop/${id}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
-      if (response.ok) {
-        showToast("Network started successfully.");
-        setIsRunning(true);
+
+      if (!stopResponse.ok) {
+        throw new Error("Failed to stop network");
+      }
+
+      // Función para esperar 2 segundos a que se detenga la red
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      // Lanzamos nuevamente la red
+      const startResponse = await fetch(`${apiUrl}/network/start/${id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (startResponse.ok) {
+        showToast("Network restarted successfully.");
+        setNetworkStatuses((prev) => ({
+          ...prev,
+          [id]: "running",
+        }));
       } else {
-        showToast("Failed to start network.", "error");
+        throw new Error("Failed to start network");
       }
     } catch (error) {
-      showToast("An error occurred while starting the network.", "error");
+      showToast(
+        "An error occurred while trying to restart the network.",
+        "error"
+      );
+    } finally {
+      setLoadingId(null);
+      setLoadingNetworks((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(id);
+        return newSet;
+      });
     }
-    setLoadingId(null);
   };
-  */
 
   const deleteNetwork = async () => {
     if (!networkToDelete) return;
@@ -278,6 +312,15 @@ export const NetworkList: React.FC = () => {
     transition: "all 0.2s ease-in-out",
   };
 
+  const handleNetworkEdited = (updatedNetwork: Network) => {
+    setNetworks((prevNetworks) => {
+      if (!prevNetworks) return prevNetworks;
+      return prevNetworks.map((network) =>
+        network.id === updatedNetwork.id ? updatedNetwork : network
+      );
+    });
+  };
+
   return (
     <div className="container py-4">
       <ToastContainer toasts={toasts} removeToast={removeToast} />
@@ -355,9 +398,12 @@ export const NetworkList: React.FC = () => {
                             </button>
                           )}
                           <button
+                            onClick={() => restartNetwork(network.id)}
+                            disabled={loadingId === network.id}
                             style={{
                               ...actionButtonStyle,
                               backgroundColor: "#fff4e6",
+                              opacity: loadingId === network.id ? 0.5 : 1,
                             }}
                           >
                             <RotateCw size={20} className="text-warning" />
@@ -365,11 +411,32 @@ export const NetworkList: React.FC = () => {
                           <button
                             style={{
                               ...actionButtonStyle,
-                              backgroundColor: "#e8f0fe",
+                              backgroundColor: "#f3e8ff", // Color violeta suave
                             }}
                           >
-                            <Settings size={20} className="text-primary" />
+                            <DollarSign size={20} className="text-purple-600" />
                           </button>
+                          <NetworkSettings
+                            network={network}
+                            actionButtonStyle={actionButtonStyle}
+                            loadingId={loadingId}
+                            onNodeAdded={(newNode) => {
+                              // Actualizar la lista de nodos cuando se agregue uno nuevo
+                              setNetworks((prevNetworks) => {
+                                if (!prevNetworks) return prevNetworks;
+                                return prevNetworks.map((n) => {
+                                  if (n.id === network.id) {
+                                    return {
+                                      ...n,
+                                      nodes: [...n.nodes, newNode],
+                                    };
+                                  }
+                                  return n;
+                                });
+                              });
+                            }}
+                            onNetworkEdited={handleNetworkEdited}
+                          />
                           <button
                             onClick={() => handleDeleteClick(network)}
                             style={{
