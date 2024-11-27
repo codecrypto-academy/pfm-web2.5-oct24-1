@@ -75,8 +75,8 @@ export const Sidebar: React.FC = () => {
                 >
                   <Link to={`/network/${id}/explorer`}>Explorer</Link>
                 </li>
-                <li className={isActive('#') ? 'active' : ''}>
-                  <Link to={"#"}>Faucet</Link>
+                <li className={isActive(`/network/${id}/faucet/`) ? 'active' : ''}>
+                  <Link to={`/network/${id}/faucet/`}>Faucet</Link>
                 </li>
               </ul>
             )}
