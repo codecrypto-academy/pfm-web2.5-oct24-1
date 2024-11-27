@@ -1049,6 +1049,11 @@ lru-cache@^5.1.1:
   dependencies:
     yallist "^3.0.2"
 
+lucide-react@^0.460.0:
+  version "0.460.0"
+  resolved "https://registry.npmjs.org/lucide-react/-/lucide-react-0.460.0.tgz"
+  integrity sha512-BVtq/DykVeIvRTJvRAgCsOwaGL8Un3Bxh8MbDxMhEWlZay3T4IpEKDEpwt5KZ0KJMHzgm6jrltxlT5eXOWXDHg==
+
 match-sorter@^6.0.2:
   version "6.3.4"
   resolved "https://registry.npmjs.org/match-sorter/-/match-sorter-6.3.4.tgz"
@@ -1252,7 +1257,7 @@ react-router@6.28.0:
   dependencies:
     "@remix-run/router" "1.21.0"
 
-"react@^16.8.0 || ^17 || ^18 || ^19", "react@^16.8.0 || ^17.0.0 || ^18.0.0", react@^18.3.1, react@>=16.8:
+"react@^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0-rc", "react@^16.8.0 || ^17 || ^18 || ^19", "react@^16.8.0 || ^17.0.0 || ^18.0.0", react@^18.3.1, react@>=16.8:
   version "18.3.1"
   resolved "https://registry.npmjs.org/react/-/react-18.3.1.tgz"
   integrity sha512-wS+hAgJShR0KhEvPJArfuPVN1+Hz1t0Y6n5jLrGQbkb4urgPE/0Rve+1kMB1v/oWgHgm4WIcV+i7F2pTVj+2iQ==
