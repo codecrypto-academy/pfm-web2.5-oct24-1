@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { ToastContainer, useToast } from "../components/Toast/Toast";
 import { useParams } from 'react-router-dom'
+import { Link } from "react-router-dom";
 
 interface Transaction {
     address: string
@@ -118,7 +119,7 @@ export const Faucet:React.FC = () => {
                     <ul className="list-unstyled mb-0">
                         <li className="mb-2">
                         <strong className="me-2">Address:</strong>
-                            { state.account ? state.account : "Wating for address..." }
+                            { state.account ? <Link to={`/network/${id}/explorer/address/${state.account}`}> {state.account} </Link> : "Wating for address..." }
                         </li>
                         <li className="mb-2">
                         <strong className="me-2">Balance:</strong>
@@ -148,11 +149,15 @@ export const Faucet:React.FC = () => {
                     <ul className="list-unstyled mb-0">
                         <li className="mb-2">
                         <strong className="me-2">Block Number:</strong>
+                            <Link to={`/network/${id}/explorer/block/${tx.block}`}>
                             {JSON.stringify(tx.block).trim().replace(/^["']|["']$/g, '')}
+                            </Link>
                         </li>
                         <li className="mb-2">
                         <strong className="me-2">Transaction Hash:</strong>
+                            <Link to={`/network/${id}/explorer/transaction/${tx.txHash}`}>
                             {JSON.stringify(tx.txHash).trim().replace(/^["']|["']$/g, '')}
+                            </Link>
                         </li>
                         <li className="mb-2">
                         <strong className="me-2">Balance:</strong>
