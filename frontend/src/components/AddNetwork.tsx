@@ -21,6 +21,47 @@ const isValidSubnet = (subnet: string): boolean => {
   return octets.slice(0, fixedOctets).join(".") + ".";
 };
 
+const validateIPBootNode = (ipBootNode: string, subnet: string): string | true => {
+  if (!isValidSubnet(subnet)) {
+    return "Invalid subnet format. Please specify a valid subnet.";
+  }
+
+  const [_, mask] = subnet.split("/");
+  const fixedPart = getFixedIPPart(subnet);
+
+  const maskValue = parseInt(mask);
+  const bootNodeParts = ipBootNode.split(".");
+
+  switch (maskValue) {
+    case 8: // Expecting num.num.num
+      if (bootNodeParts.length !== 3) {
+        return "IP Boot Node must follow the format: x.x.x for /8 mask.";
+      }
+      break;
+    case 16: // Expecting num.num
+      if (bootNodeParts.length !== 2) {
+        return "IP Boot Node must follow the format: x.x for /16 mask.";
+      }
+      break;
+    case 24: // Expecting single num in range 0-255
+      if (bootNodeParts.length !== 1 || isNaN(parseInt(bootNodeParts[0])) || parseInt(bootNodeParts[0]) < 0 || parseInt(bootNodeParts[0]) > 255) {
+        return "IP Boot Node must be a number between 0 and 255 for /24 mask.";
+      }
+      break;
+    default:
+      return "Unsupported subnet mask. Only /8, /16, and /24 are allowed.";
+  }
+
+  // Ensure the IP Boot Node matches the fixed part
+  const completeIP = fixedPart + ipBootNode;
+  const completeParts = completeIP.split(".");
+  if (!completeParts.every((part) => parseInt(part) >= 0 && parseInt(part) <= 255)) {
+    return "Complete IP Boot Node address is invalid.";
+  }
+
+  return true;
+};
+
 export const AddNetwork: React.FC = () => {
   const {
     register,
@@ -161,20 +202,18 @@ export const AddNetwork: React.FC = () => {
 
       <div className="mb-3">
         <label htmlFor="">IP Boot Node</label>
-        <span className="input-group-text">{fixedIPPart}</span>
-        <input
-          {...register("ipBootNode", { 
-            required: "Ip Boot Node is required",
-          validate:{
-              range: (value) =>
-                (parseInt(value) >= 0 && parseInt(value) <= 255) ||
-                  "Last octet must be between 0 and 255",
-                }
-          })}
-          type="text"
-          placeholder="[0-255]}"
-          className={`form-control ${errors.ipBootNode ? "is-invalid" : ""}`}
-        />
+        <div className="input-group">
+          <span className="input-group-text">{fixedIPPart}</span>
+          <input
+            {...register("ipBootNode", { 
+              required: "Ip Boot Node is required",
+              validate: (value) => validateIPBootNode(value, subnet)
+            })}
+            type="text"
+            placeholder="0.0.0 | 0.0 | 0"
+            className={`form-control ${errors.ipBootNode ? "is-invalid" : ""}`}
+          />
+        </div>
         {errors.ipBootNode && <p className="text-danger">{errors.ipBootNode.message}</p>}
       </div>
 
