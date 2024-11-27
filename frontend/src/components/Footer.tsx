@@ -13,24 +13,20 @@ interface FooterSection {
 export const Footer: React.FC = () => {
   const footerSections: FooterSection[] = [
     {
-      title: 'Usefull links',
+      title: 'Documentation links',
       links: [
-        { text: 'Link 1', url: '#' },
-        { text: 'Link 2', url: '#' },
+
       ]
     },
     {
-      title: 'Contact',
+      title: 'Authors',
       links: [
-        { text: 'Link 4', url: '#' },
-        { text: 'Link 5', url: '#' },
+
       ]
     },
     {
-      title: 'RRSS',
+      title: 'Tutorials',
       links: [
-        { text: 'Link 7', url: '#' },
-        { text: 'Link 8', url: '#' },
       ]
     }
   ];
