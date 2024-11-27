@@ -36,17 +36,17 @@ const validateIPBootNode = (ipBootNode: string, subnet: string): string | true =
   switch (maskValue) {
     case 8: // Expecting num.num.num
       if (bootNodeParts.length !== 3) {
-        return "IP Boot Node must follow the format: x.x.x for /8 mask.";
+        return "IP  must follow the format: x.x.x for /8 mask.";
       }
       break;
     case 16: // Expecting num.num
       if (bootNodeParts.length !== 2) {
-        return "IP Boot Node must follow the format: x.x for /16 mask.";
+        return "IP must follow the format: x.x for /16 mask.";
       }
       break;
     case 24: // Expecting single num in range 0-255
       if (bootNodeParts.length !== 1 || isNaN(parseInt(bootNodeParts[0])) || parseInt(bootNodeParts[0]) < 0 || parseInt(bootNodeParts[0]) > 255) {
-        return "IP Boot Node must be a number between 0 and 255 for /24 mask.";
+        return "IP  must be a number between 0 and 255 for /24 mask.";
       }
       break;
     default:
@@ -57,7 +57,7 @@ const validateIPBootNode = (ipBootNode: string, subnet: string): string | true =
   const completeIP = fixedPart + ipBootNode;
   const completeParts = completeIP.split(".");
   if (!completeParts.every((part) => parseInt(part) >= 0 && parseInt(part) <= 255)) {
-    return "Complete IP Boot Node address is invalid.";
+    return "The  IP address is invalid.";
   }
 
   return true;
@@ -148,11 +148,11 @@ export const AddNetwork: React.FC = () => {
     }
   };
 
-  const { fields: allocFields, append: addAlloc } = useFieldArray({
+  const { fields: allocFields, append: addAlloc, remove:removeAlloc } = useFieldArray({
     control,
     name: "alloc",
   });
-  const { fields: nodeFields, append: addNode } = useFieldArray({
+  const { fields: nodeFields, append: addNode, remove:removeNode } = useFieldArray({
     control,
     name: "nodes",
   });
@@ -228,6 +228,12 @@ export const AddNetwork: React.FC = () => {
         <h5>Allocations</h5>
         {allocFields.map((field, index) => (
           <div key={field.id} className="mb-2">
+              <button
+              type="button"
+              className="btn btn-outline-danger mt-2"
+              onClick={() => removeAlloc(index)} >
+              Remove
+              </button>
             <div className="d-flex flex-column">
               <input
                 type="text"
@@ -274,6 +280,12 @@ export const AddNetwork: React.FC = () => {
         <h5>Nodes</h5>
         {nodeFields.map((field, index) => (
           <div key={field.id} className="mb-4">
+            <button
+              type="button"
+              className="btn btn-outline-danger mt-2"
+              onClick={() => removeNode(index)} >
+              Remove
+              </button>
             <select
               {...register(`nodes.${index}.type`, {
                 required: "Type is required",
@@ -285,6 +297,9 @@ export const AddNetwork: React.FC = () => {
               <option value="rpc">RPC</option>
               <option value="normal">Normal</option>
             </select>
+            {errors.nodes?.[index]?.type && (
+                <p className="text-danger">{errors.nodes?.[index]?.type?.message}</p>
+              )}
             <input
               {...register(`nodes.${index}.name`, {
                 required: "Name is required",
@@ -292,13 +307,24 @@ export const AddNetwork: React.FC = () => {
               placeholder="Name"
               className={`form-control mb-1 ${errors.nodes?.[index]?.name ? "is-invalid" : ""}`}
             />
-            <input
-              {...register(`nodes.${index}.ip`, {
-                required: "IP is required",
-              })}
-              placeholder="0.0.0.0"
-              className={`form-control mb-1 ${errors.nodes?.[index]?.ip ? "is-invalid" : ""}`}
-            />
+             {errors.nodes?.[index]?.name && (
+                <p className="text-danger">{errors.nodes?.[index]?.name?.message}</p>
+              )}
+            <div className="input-group">
+              <span className="input-group-text">{fixedIPPart}</span>
+              <input
+                {...register(`nodes.${index}.ip`, {
+                  required: "IP is required",
+                  validate: (value) => validateIPBootNode(value, subnet)
+                })}
+                placeholder="0.0.0 | 0.0 | 0"
+                className={`form-control mb-1 ${errors.nodes?.[index]?.ip ? "is-invalid" : ""}`}
+              />
+            </div>
+            {errors.nodes?.[index]?.ip && (
+                <p className="text-danger">{errors.nodes?.[index]?.ip?.message}</p>
+              )}
+
             {/* Conditionally render the port input if node type is rpc */}
             {watch(`nodes.${index}.type`) === "rpc" && (
               <input
