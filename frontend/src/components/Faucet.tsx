@@ -21,6 +21,7 @@ export const Faucet:React.FC = () => {
             balance: null})
     const [loading, setLoading] = useState<boolean>(false)
     const [tx, setTx] = useState<Transaction | null>()
+    const { toasts, showToast, removeToast } = useToast();
     
     useEffect(() =>{
         const ethereum = (window as any).ethereum
@@ -92,26 +93,35 @@ export const Faucet:React.FC = () => {
     async function handleClick() {
         setLoading(true)
         if (!state.account){
-            return 'There is no account'    
+            return   
         }
         try {
             const response = await fetch(`${apiUrl}/network/${id}/faucet/${state.account}`,{
                 method: "GET"
             })
+            if (!response.ok){
+                showToast("Transaction error.", "error")
+                setLoading(false)
+                return
+            }
+            showToast("Transaction completed succsessfuly.")
             const transaction = await response.json() as Transaction | null
             if(!transaction) {
+                setLoading(false)
                 return
             }                
-            await setTx(transaction)
+            setTx(transaction)
             setState((prevState) => ({ ...prevState, balance: transaction.balance.toString()})) 
             setLoading(false)
         } catch (error) {
-            
+            showToast("An error occurred during the transaction.", "error")
+            setLoading(false)
         }
     }
     
     return(
         <div className="container mt-4">
+            <ToastContainer toasts={toasts} removeToast={removeToast} />
             <h3>Faucet</h3>
             <section className="card mb-4">
                 <div className="card-body">
@@ -136,9 +146,12 @@ export const Faucet:React.FC = () => {
                             ) : (
                             <button
                             disabled={loading}
-                            className="btn btn-warning"
+                            className="btn btn-warning btn-sm d-flex"
                             >
                             Waiting for tx...
+                            <div className="spinner-border spinner-border-sm ms-1" role="status">
+                                <span className="visually-hidden">Loading...</span>
+                            </div>
                             </button>)}
                 </div>
             </section>
@@ -164,7 +177,7 @@ export const Faucet:React.FC = () => {
                             {JSON.stringify(tx.balance).trim().replace(/^["']|["']$/g, '')}
                         </li>
                         <li className="mb-2">
-                        <strong className="me-2">Amount sent:</strong>
+                        <strong className="me-2">Amount recived:</strong>
                             {JSON.stringify(tx.amount).trim().replace(/^["']|["']$/g, '')}
                         </li>
                         <li>
