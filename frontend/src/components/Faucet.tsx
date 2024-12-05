@@ -54,7 +54,7 @@ export const Faucet:React.FC = () => {
 
         const handleAccountsChanged = (accounts: string[]) => {
             if (accounts.length === 0) {
-                alert("No account found");
+                alert("No account found 1");
                 setState((prevState) => ({
                     ...prevState,
                     account: null,
@@ -68,15 +68,15 @@ export const Faucet:React.FC = () => {
         };
 
         ethereum
-        .request({ method: "eth_accounts" })
+        .request({ method: "eth_requestAccounts" })
         .then((accounts: string[]) => {
             if (accounts.length > 0) {
                 handleAccountsChanged(accounts);
             } else {
-                alert("No account found");
+                alert("No account found 2");
             }
         })
-        .catch((error: any) => {
+        .catch((error) => {
             console.error("Error fetching accounts:", error);
         });
 
@@ -86,7 +86,7 @@ export const Faucet:React.FC = () => {
         // Clean up the event listener
             ethereum.removeListener("accountsChanged", handleAccountsChanged);
         };
-    }, [setState])
+    }, [state.account])
 
     const apiUrl = import.meta.env.VITE_API_URL
 
