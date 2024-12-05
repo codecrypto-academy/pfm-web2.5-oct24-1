@@ -417,3 +417,19 @@ form{
       width: 100%;
     }
   }
+
+  /*Team members styles*/
+  .card {
+    border:1px solid rgb(0 0 0 / 60%);
+    transition: transform 0.3s ease;
+  }
+  .card:hover {
+    transform: scale(1.05);
+  }
+
+  .card-body img {
+    width: 150px;
+    height: 150px; 
+    objectFit: cover;
+    border: 4px solid rgb(50 56 65);
+  }

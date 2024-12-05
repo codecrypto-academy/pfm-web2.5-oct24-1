@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import { App } from './components/App';
+import './index.css';
 import { NetworkList } from './components/NetworkList';
 import { NetworkDetails } from './components/NetworkDetails';
 import { AddNetwork } from './components/AddNetwork';
@@ -11,8 +12,8 @@ import { BlockTransactions } from './components/explorer/BlockTransactions';
 import { Transaction } from './components/explorer/Transaction';
 import { Address } from './components/explorer/Address';
 import { Explorer } from './components/explorer/Explorer';
-import './index.css';
 import { Faucet } from './components/Faucet'
+import { TeamMembers } from './components/TeamMembers';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,6 +44,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path="address/:address" element={<Address />} />
               <Route path="*" element={<Explorer />} />
             </Route>
+            <Route path="/team-members" element={<TeamMembers/>} />
           </Route>
         </Routes>
       </BrowserRouter>
