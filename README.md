@@ -116,4 +116,4 @@ Contributions, issues, and feature requests are welcome. If you want to contribu
 
 ## **License**
     
-Click (here)[https://github.com/codecrypto-academy/pfm-web2.5-oct24-1/blob/main/LICENSE] for more info
+Click [here](https://github.com/codecrypto-academy/pfm-web2.5-oct24-1/blob/main/LICENSE) for more info
