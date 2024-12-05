@@ -7,7 +7,7 @@ Welcome to the Final Project Module  for Web2.5. This repository contains all ne
 2. [Getting Started](#getting-started)
 3. [Installation](#installation)
 4. [Running the Project](#running-the-project)
-5. [Contributions](#contributions)]
+5. [Contributions](#contributions)
 7. [License](#license)
 
 # **Ethereum Private Network Automator**
