@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Play, Square, RotateCw, Trash2, DollarSign } from "lucide-react";
+import { Link } from "react-router-dom";
 import { ToastContainer, useToast } from "../components/Toast/Toast";
 import { NetworkStatusObserver } from "../components/NetworkStatusObserver";
 import { NetworkSettings } from "./NetworkSettings";
@@ -414,7 +415,9 @@ export const NetworkList: React.FC = () => {
                               backgroundColor: "#f3e8ff", // Color violeta suave
                             }}
                           >
+                            <Link to={`/network/${network.id}/faucet/`}>
                             <DollarSign size={20} className="text-purple-600" />
+                            </Link>
                           </button>
                           <NetworkSettings
                             network={network}
