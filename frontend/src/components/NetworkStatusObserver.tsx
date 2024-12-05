@@ -45,10 +45,11 @@ export const NetworkStatusObserver: React.FC<NetworkStatusObserverProps> = ({
       }
     };
 
+    checkStatus();
     const interval = setInterval(checkStatus, 3000);
 
     return () => clearInterval(interval);
-  }, [networkId, onStatusChange, apiUrl, isLoading]);
+  }, [networkId, isLoading]);
 
   if (isLoading) {
     return (
