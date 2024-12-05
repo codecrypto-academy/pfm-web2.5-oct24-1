@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "frontend": "cd ./frontend && npm run dev",
-    "backend": "cd ./backend && npm run dev",
+    "backend": "cd ./backend && sudo npm run dev",
     "dev": "concurrently \"npm run frontend\" \"npm run backend\"",
     "install-all": "npm install && cd frontend && npm install && cd ../backend && npm install"
   },
