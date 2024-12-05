@@ -38,7 +38,7 @@ export function generateGenesisFile(network: Network, addresses: string[]): Gene
         constantinopleBlock: 0,
         petersburgBlock: 0,
         clique: {
-            period: 5,
+            period: 30,
             epoch: 30000,
         },
     };

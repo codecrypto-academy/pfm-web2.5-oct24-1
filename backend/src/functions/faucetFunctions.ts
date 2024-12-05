@@ -7,7 +7,7 @@ import { Network } from '../types/network'
 const BASE_DIR = path.join(process.cwd());
 const NETWORKS_FILE = path.join(BASE_DIR, 'data', 'networks.json');
 const NETWORKS_DIR = path.join(BASE_DIR, 'networks');
-const AMOUNT = '0.001'
+const AMOUNT = '10'
 
 function generateTxDetails(toAddress: string, fromAddress: string): object {
     return {
