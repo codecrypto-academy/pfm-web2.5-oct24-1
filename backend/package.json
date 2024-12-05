@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node dist/app.js",
-    "dev": "nodemon --config --ignore 'data/**/*' --ignore 'networks/**/*' src/app.ts",
+    "dev": "nodemon src/app.ts",
     "build": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -16,7 +16,10 @@
     "@types/dockerode": "^3.3.31",
     "cors": "^2.8.5",
     "dockerode": "^4.0.2",
-    "express": "^4.21.1"
+    "ethers": "^6.13.4",
+    "express": "^4.21.1",
+    "web3": "^4.15.0",
+    "web3-validator": "^2.0.6"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",

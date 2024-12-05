@@ -136,6 +136,91 @@ export function validateNetwork(network: Network, existingNetworks: Network[]): 
     return errors;
 }
 
+export function getNetFormatError(data: Network): NetworkValidationError[] {
+    const errors: NetworkValidationError[] = [];
+    if (typeof data !== 'object' || data === null) {
+        errors.push({
+          field: 'data',
+          message: 'the data is not an object or is null.',
+        });
+        return errors
+      } else {
+        if (typeof data.id !== 'string') {
+          errors.push({
+            field: 'id',
+            message: 'the "id" field must be a string.',
+          });
+          return errors
+        }
+    
+        if (typeof data.chainId !== 'number') {
+          errors.push({
+            field: 'chainId',
+            message: 'the "chainId" field of the network  must be a number.',
+          });
+          return errors
+        }
+    
+        if (data.chainId !== undefined && RESERVED_CHAIN_IDS.has(data.chainId)) {
+          errors.push({
+            field: 'chainId',
+            message: 'the "chainId" is reserved to another network and cannot be used.',
+          });
+          return errors
+        }
+    
+        if (typeof data.subnet !== 'string') {
+          errors.push({
+            field: 'subnet',
+            message: 'the "subnet" field must be a string.',
+          });
+          return errors
+        }
+    
+        if (data.subnet !== undefined && !isValidSubnet(data.subnet)) {
+          errors.push({
+            field: 'subnet',
+            message: 'the "subnet" field is not well formed.',
+          });
+          return errors
+        }
+    
+        if (typeof data.ipBootNode !== 'string') {
+          errors.push({
+            field: 'ipBootNode',
+            message: 'the "ipBootNode" field must be a string.',
+          });
+          return errors
+        }
+
+    
+        if (data.ipBootNode !== undefined && !isValidIP(data.ipBootNode)) {
+          errors.push({
+            field: 'ipBootNode',
+            message: 'the "ipBootNode" field does not contain a valid IP address.',
+          });
+          return errors
+        }
+    
+        if (!isAllocArray(data.alloc)) {
+          errors.push({
+            field: 'alloc',
+            message: 'the "alloc" field must have correct format please verify alloc fields',
+          });
+          return errors
+        }
+    
+        if (!isNodeArray(data.nodes)) {
+          errors.push({
+            field: 'nodes',
+            message: 'the "nodes" field must have correct format please verify nodes fields.',
+          });
+          return errors
+        }
+      }
+  
+  }
+
 export function isNetwork(data: any): data is Network {
     return (
         typeof data === 'object' &&

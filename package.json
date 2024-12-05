@@ -1,0 +1,17 @@
+{
+  "name": "pfm-web-25-grupo-1",
+  "version": "1.0.0",
+  "scripts": {
+    "frontend": "cd ./frontend && npm run dev",
+    "backend": "cd ./backend && sudo npm run dev",
+    "dev": "concurrently \"npm run frontend\" \"npm run backend\"",
+    "install-all": "npm install && cd frontend && npm install && cd ../backend && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  },
+  "dependencies": {
+    "lucide-react": "^0.460.0",
+    "react-icons": "^5.3.0"
+  }
+}
